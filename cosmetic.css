@@ -107,8 +107,8 @@ html, body { height: 100%; margin: 0; font-family: Inter, Arial, sans-serif; bac
 /* Floating list button for mobile */
 .fab {
   position: absolute;
-  bottom: 20px;
-  right: 16px;
+  top: 20px;
+  right: 20px;
   z-index: 2300;
   background: var(--accent);
   color: white;
@@ -171,7 +171,7 @@ html, body { height: 100%; margin: 0; font-family: Inter, Arial, sans-serif; bac
   .sidebar { transform: translateX(-110%); opacity: 0; pointer-events: none; left: 8px; top: 8px; }
   .sidebar.open { transform: translateX(8px); opacity: 1; pointer-events: auto; }
   #map-desktop { display:none; }
-  #map-mobile { display:block; }
+  #map-mobile { display:none; }
   .fab { display:block; }
 }
 @media (min-width: 901px) {
@@ -188,3 +188,4 @@ html, body { height: 100%; margin: 0; font-family: Inter, Arial, sans-serif; bac
   overflow: hidden;
   touch-action: manipulation;
 }
+
