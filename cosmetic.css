@@ -91,14 +91,15 @@ html, body { height: 100%; margin: 0; font-family: Inter, Arial, sans-serif; bac
 .map-area { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; }
 
 /* Map containers */
-.map-container { border: 2px solid #333; box-shadow: 0 0 10px rgba(0,0,0,0.12); background: #fff; }
+.map-container {
+  border: 1px solid rgba(0,0,0,0.45);   /* thinner border */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08); /* subtler shadow */
+  border-radius: 8px;                    /* slightly smaller radius */
+  background: #fff;                      /* keep map background white */
+}
 
 /* Desktop map fixed size */
-#map-desktop { 
-  width: 1200px;   /* was 1530px */
-  height: 825px;   /* was 1050px */
-  margin: auto;
-}
+#map-desktop { width: 1530px; height: 1050px; margin: auto; }
 
 /* Mobile map responsive */
 #map-mobile { width: 100vw; height: calc(100vw * (1050 / 1530)); max-width:1530px; max-height:1050px; }
@@ -118,13 +119,13 @@ html, body { height: 100%; margin: 0; font-family: Inter, Arial, sans-serif; bac
   display:none;
 }
 
-/* Header above map (match desktop width) */
+/* Header above map */
 .map-header {
   position: absolute;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 1200px;   /* match #map-desktop */
+  width: 1530px;
   max-width: 100%;
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(6px);
@@ -135,14 +136,15 @@ html, body { height: 100%; margin: 0; font-family: Inter, Arial, sans-serif; bac
   align-items: center;
   z-index: 2100;
 }
+.map-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
 
-/* Footer below map (match desktop width) */
+/* Footer below map */
 .map-footer {
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 1200px;   /* match #map-desktop */
+  width: 1530px;
   max-width: 100%;
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(6px);
@@ -179,5 +181,10 @@ html, body { height: 100%; margin: 0; font-family: Inter, Arial, sans-serif; bac
   .fab { display:none; }
 }
 
-.leaflet-container { touch-action: manipulation; }
-
+.leaflet-container {
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: manipulation;
+}
