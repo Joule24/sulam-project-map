@@ -35,7 +35,7 @@ login.addEventListener("click", function (event) {
     .then((userCredential) => {
       // Signed up 
       const user = userCredential.user;
-      alert("Loging In...")
+      alert("Logging In...")
       window.location.href = "admin.html";
     })
     .catch((error) => {
