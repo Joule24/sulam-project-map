@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -11,9 +12,9 @@
   <!-- MarkerCluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-
-  <link rel="stylesheet" href="cosmetic.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <div class="app">
 
@@ -47,12 +48,27 @@
     <div id="mapHeader" class="map-header">
       <h2>KUL City Walk — Area 1</h2>
       <div class="header-controls">
+        <button class="btn" id="adminBtn">ADMIN</button>
         <button id="fitAllBtnTop" class="btn small">Overview</button>
       </div>
     </div>
 
     <!-- Map area -->
     <main class="map-area">
+      <!-- Admin panel overlay -->
+      <div id="adminPanel" class="admin-panel" aria-hidden="true">
+        <h2>Admin Panel</h2>
+        <div class="admin-section">
+          <input type="text" placeholder="Location Name" id="adminName">
+          <textarea placeholder="Description" id="adminDesc"></textarea>
+          <input type="number" placeholder="Latitude" id="adminLat">
+          <input type="number" placeholder="Longitude" id="adminLng">
+          <p style="font-size:12px;color:#666;">*Click on the map to auto-fill latitude & longitude*</p>
+          <button id="adminAddBtn" class="btn">Add / Update Location</button>
+          <button id="adminCloseBtn" class="btn secondary">Close</button>
+        </div>
+      </div>
+
       <!-- Desktop map -->
       <div id="map-desktop" class="map-container" aria-hidden="true"></div>
       <!-- Mobile map -->
@@ -89,6 +105,7 @@
   <!-- MarkerCluster JS -->
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
-  <script src="script.js"></script>
+  <script src="index.js"></script>
 </body>
+
 </html>
