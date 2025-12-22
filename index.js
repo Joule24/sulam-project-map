@@ -28,6 +28,10 @@ const modalShareBtn = document.getElementById('modalShare');
 const selectedInfoEl = document.getElementById('selectedInfo');
 const poiSearchEl = document.getElementById('poiSearch');
 
+// ---------------- RECOMMENDATION UI ----------------
+const recommendationBox = document.getElementById('recommendationBox');
+const recommendationList = document.getElementById('recommendationList');
+
 // ---------------- MAP CONFIG ----------------
 const IMAGE_FILENAME = "bwm_map3.jpg";
 const IMG_W = 1530;
@@ -68,15 +72,127 @@ function latLngToPixel(lat, lng) {
   return [y, x];
 }
 
+// ---------------- RECOMMENDATION LOGIC ----------------
+function distance(a, b) {
+  const dy = a[0] - b[0];
+  const dx = a[1] - b[1];
+  return Math.sqrt(dy * dy + dx * dx);
+}
+
+function getAllPlaces() {
+  const pois = poiMarkers.map(p => ({
+    id: p.id,
+    title: p.data.title,
+    coords: p.desktop.getLatLng(),
+    type: 'poi'
+  }));
+
+  const zones = zonePolygons.map(z => {
+    const center = z.desktop.getBounds().getCenter();
+    return {
+      id: z.id,
+      title: z.data.title,
+      coords: center,
+      type: 'zone'
+    };
+  });
+
+  return [...pois, ...zones];
+}
+
+function showRecommendations(originCoords, excludeId) {
+  if (!originCoords) {
+    recommendationBox.classList.add('hidden');
+    return;
+  }
+
+  // 1. Recompute all places fresh
+  const allPlaces = [
+    ...poiMarkers.map(p => ({
+      id: p.id,
+      title: p.data.title,
+      desc: p.data.desc,
+      img: p.data.img || 'placeholder.jpg',
+      coords: { lat: p.desktop.getLatLng().lat, lng: p.desktop.getLatLng().lng },
+      type: 'poi'
+    })),
+    ...zonePolygons.map(z => {
+      const center = z.desktop.getBounds().getCenter();
+      return {
+        id: z.id,
+        title: z.data.title,
+        desc: z.data.desc,
+        img: z.data.img || 'placeholder.jpg',
+        coords: { lat: center.lat, lng: center.lng },
+        type: 'zone'
+      };
+    })
+  ];
+
+  const ranked = allPlaces
+    .filter(p => p.id !== excludeId)
+    .map(p => ({
+      ...p,
+      dist: distance(
+        [originCoords.lat, originCoords.lng],
+        [p.coords.lat, p.coords.lng]
+      )
+    }))
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 3);
+
+  if (!ranked.length) {
+    recommendationBox.classList.add('hidden');
+    return;
+  }
+
+  // 2. Build fresh list
+  recommendationList.innerHTML = '';
+  ranked.forEach(item => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <div class="rec-thumb-wrapper">
+        <img src="${item.img}" alt="${item.title}" class="rec-thumb">
+      </div>
+      <div class="rec-title-text">${item.title}</div>
+    `;
+
+    // 3. Each click uses fresh item object
+    li.addEventListener('click', () => {
+      activeMapDesktop.setView([item.coords.lat, item.coords.lng], Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom()));
+      activeMapMobile.setView([item.coords.lat, item.coords.lng], Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom()));
+      showModal(item); // triggers new recommendations
+    });
+
+    recommendationList.appendChild(li);
+  });
+
+  recommendationBox.classList.remove('hidden');
+}
+
 // ---------------- MODAL FUNCTIONS ----------------
 function showModal(data) {
+  // Normalize coords: always {lat, lng}
+  let coords = data.coords;
+  if (Array.isArray(coords)) {
+    coords = { lat: coords[0], lng: coords[1] };
+  }
+
+  // Update modal content
   modalTitle.textContent = data.title || '';
-  modalImage.src = data.img || '';
+  modalImage.src = data.img || 'placeholder.jpg';
   modalImage.alt = data.title || 'POI image';
   modalDesc.textContent = data.desc || '';
   poiModal.setAttribute('aria-hidden', 'false');
-  poiModal._current = data;
+  poiModal._current = { ...data, coords };
   selectedInfoEl.textContent = data.title || '';
+
+  // Center maps
+  activeMapDesktop.setView([coords.lat, coords.lng], Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom()));
+  activeMapMobile.setView([coords.lat, coords.lng], Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom()));
+
+  // Show fresh recommendations
+  showRecommendations(coords, data.id);
 }
 
 function hideModal() {
@@ -84,6 +200,7 @@ function hideModal() {
   modalImage.src = '';
   poiModal._current = null;
   selectedInfoEl.textContent = 'Select a POI or Zone to see details';
+  recommendationBox.classList.add('hidden');
 }
 
 closeModalBtn.addEventListener('click', hideModal);
@@ -146,10 +263,24 @@ function startListeners() {
       if (isNaN(lat) || isNaN(lng)) return;
 
       const markerDesktop = L.marker([lat, lng])
-        .on('click', () => showModal({ id: doc.id, title: d.title, desc: d.desc, img: d.img }));
+        .on('click', () => showModal({
+          id: doc.id,
+          title: d.title,
+          desc: d.desc,
+          img: d.img,
+          coords: [lat, lng]
+        }));
+
 
       const markerMobile = L.marker([lat, lng])
-        .on('click', () => showModal({ id: doc.id, title: d.title, desc: d.desc, img: d.img }));
+        .on('click', () => showModal({
+          id: doc.id,
+          title: d.title,
+          desc: d.desc,
+          img: d.img,
+          coords: [lat, lng]
+        }));
+
 
       // Add markers straight to maps (NO CLUSTERING)
       markerDesktop.addTo(activeMapDesktop);
@@ -179,8 +310,28 @@ function startListeners() {
     snapshot.forEach(doc => {
       const d = doc.data();
       const coords = d.coordinates.map(c => [c.x, c.y]); // Leaflet uses [lat, lng] = [y, x]
-      const polyDesktop = L.polygon(coords, { color: '#1e6091', fillOpacity: 0.28, weight: 2 }).on('click', () => showModal({ id: doc.id, title: d.title, desc: d.desc, img: d.img }));
-      const polyMobile = L.polygon(coords, { color: '#1e6091', fillOpacity: 0.28, weight: 2 }).on('click', () => showModal({ id: doc.id, title: d.title, desc: d.desc, img: d.img }));
+      const polyDesktop = L.polygon(coords, { color: '#1e6091', fillOpacity: 0.28, weight: 2 }).on('click', () => {
+        const center = polyDesktop.getBounds().getCenter();
+        showModal({
+          id: doc.id,
+          title: d.title,
+          desc: d.desc,
+          img: d.img,
+          coords: [center.lat, center.lng]
+        });
+      });
+
+      const polyMobile = L.polygon(coords, { color: '#1e6091', fillOpacity: 0.28, weight: 2 }).on('click', () => {
+        const center = polyDesktop.getBounds().getCenter();
+        showModal({
+          id: doc.id,
+          title: d.title,
+          desc: d.desc,
+          img: d.img,
+          coords: [center.lat, center.lng]
+        });
+      });
+
 
       polyDesktop.addTo(activeMapDesktop);
       polyMobile.addTo(activeMapMobile);
@@ -212,37 +363,67 @@ function populatePOIsSidebar(docs) {
     `;
     markerListEl.appendChild(li);
 
+    const markerObj = poiMarkers.find(m => m.id === doc.id);
+    if (!markerObj) return;
+
+    // GO button
     li.querySelector('[data-action="goto"]').addEventListener('click', () => {
       const markerObj = poiMarkers.find(m => m.id === doc.id);
-      if (markerObj) {
-        activeMapDesktop.setView(markerObj.desktop.getLatLng(), Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom()));
-        activeMapMobile.setView(markerObj.mobile.getLatLng(), Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom()));
-        showModal({ id: doc.id, title: d.title, desc: d.desc, img: d.img });
-      }
+      if (!markerObj) return;
+
+      const latlngDesktop = markerObj.desktop.getLatLng();
+      const latlngMobile = markerObj.mobile.getLatLng();
+
+      // Fit bounds with padding and maxZoom to prevent over-zoom
+      activeMapDesktop.fitBounds([latlngDesktop], { padding: [80, 80], maxZoom: 1 });
+      activeMapMobile.fitBounds([latlngMobile], { padding: [80, 80], maxZoom: 1 });
+
+      showModal({
+        id: doc.id,
+        title: d.title,
+        desc: d.desc,
+        img: d.img,
+        coords: [latlngDesktop.lat, latlngDesktop.lng]
+      });
     });
 
-    li.querySelector('[data-action="share"]').addEventListener('click', () => {
+    // SHARE button
+    li.querySelector('[data-action="share"]').addEventListener('click', (e) => {
+      e.stopPropagation();
       const hash = `#poi=${encodeURIComponent(doc.id)}`;
       navigator.clipboard.writeText(location.origin + location.pathname + hash);
     });
 
+    // Click anywhere on the list item
     li.addEventListener('click', () => {
       const markerObj = poiMarkers.find(m => m.id === doc.id);
-      if (markerObj) {
-        activeMapDesktop.setView(markerObj.desktop.getLatLng(), Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom()));
-        activeMapMobile.setView(markerObj.mobile.getLatLng(), Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom()));
-        showModal({ id: doc.id, title: d.title, desc: d.desc, img: d.img });
-      }
+      if (!markerObj) return;
+
+      const latlngDesktop = markerObj.desktop.getLatLng();
+      const latlngMobile = markerObj.mobile.getLatLng();
+
+      activeMapDesktop.fitBounds([latlngDesktop], { padding: [80, 80], maxZoom: 1 });
+      activeMapMobile.fitBounds([latlngMobile], { padding: [80, 80], maxZoom: 1 });
+
+      showModal({
+        id: doc.id,
+        title: d.title,
+        desc: d.desc,
+        img: d.img,
+        coords: [latlngDesktop.lat, latlngDesktop.lng]
+      });
     });
   });
 }
 
 function populateZonesSidebar(docs) {
   zoneListEl.innerHTML = '';
+
   docs.forEach(doc => {
     const d = doc.data();
     const li = document.createElement('li');
     li.dataset.id = doc.id;
+
     li.innerHTML = `
       <img class="thumb" src="${d.thumb || d.img || ''}" alt="${d.title || 'Zone'} thumbnail">
       <div class="item-text">
@@ -254,29 +435,51 @@ function populateZonesSidebar(docs) {
         <button class="btn small secondary" data-action="share">Share</button>
       </div>
     `;
+
     zoneListEl.appendChild(li);
 
+    // GO button
     li.querySelector('[data-action="goto"]').addEventListener('click', () => {
       const polyObj = zonePolygons.find(z => z.id === doc.id);
-      if (polyObj) {
-        activeMapDesktop.fitBounds(polyObj.desktop.getBounds());
-        activeMapMobile.fitBounds(polyObj.mobile.getBounds());
-        showModal({ id: doc.id, title: d.title, desc: d.desc, img: d.img });
-      }
+      if (!polyObj) return;
+
+      const center = polyObj.desktop.getBounds().getCenter();
+
+      activeMapDesktop.fitBounds(polyObj.desktop.getBounds());
+      activeMapMobile.fitBounds(polyObj.mobile.getBounds());
+
+      showModal({
+        id: doc.id,
+        title: d.title,
+        desc: d.desc,
+        img: d.img,
+        coords: [center.lat, center.lng]
+      });
     });
 
+    // SHARE button
     li.querySelector('[data-action="share"]').addEventListener('click', () => {
       const hash = `#poi=${encodeURIComponent(doc.id)}`;
       navigator.clipboard.writeText(location.origin + location.pathname + hash);
     });
 
+    // Click anywhere on the list item
     li.addEventListener('click', () => {
       const polyObj = zonePolygons.find(z => z.id === doc.id);
-      if (polyObj) {
-        activeMapDesktop.fitBounds(polyObj.desktop.getBounds());
-        activeMapMobile.fitBounds(polyObj.mobile.getBounds());
-        showModal({ id: doc.id, title: d.title, desc: d.desc, img: d.img });
-      }
+      if (!polyObj) return;
+
+      const center = polyObj.desktop.getBounds().getCenter();
+
+      activeMapDesktop.fitBounds(polyObj.desktop.getBounds());
+      activeMapMobile.fitBounds(polyObj.mobile.getBounds());
+
+      showModal({
+        id: doc.id,
+        title: d.title,
+        desc: d.desc,
+        img: d.img,
+        coords: [center.lat, center.lng]
+      });
     });
   });
 }

@@ -425,3 +425,88 @@ body {
   border: 1px solid #ccc;
   width: 100%;
 }
+
+.recommendations {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.recommendations.hidden {
+  display: none;
+}
+
+.rec-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+#recommendationList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#recommendationList li {
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+#recommendationList li:hover {
+  background: #e6eef8;
+}
+
+/* Recommendation list horizontal layout */
+#recommendationList {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#recommendationList li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100px; /* frame width */
+  cursor: pointer;
+  background: #f5f7fa;
+  border-radius: 6px;
+  padding: 6px;
+  overflow: hidden; /* ensure cropping works */
+  transition: transform 0.15s ease;
+}
+
+#recommendationList li:hover {
+  transform: translateY(-3px);
+  background: #e6eef8;
+}
+
+/* Thumbnail wrapper to crop automatically */
+.rec-thumb-wrapper {
+  width: 80px;
+  height: 80px;
+  overflow: hidden;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.rec-thumb-wrapper img.rec-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* this crops the image to fit the frame */
+  display: block;
+}
+
+/* Title below image */
+#recommendationList li .rec-title-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+}

@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="style.css" />
-  
+
 </head>
 
 <body>
@@ -60,7 +60,7 @@
 
       <!-- Desktop map -->
       <div id="map-desktop" class="map-container" aria-hidden="true"></div>
-      
+
       <!-- Mobile map -->
       <div id="map-mobile" class="map-container" aria-hidden="true"></div>
 
@@ -85,6 +85,10 @@
       <p id="modalDesc"></p>
       <div class="modal-actions">
         <button id="modalShare" class="btn">Copy link</button>
+      </div>
+      <div id="recommendationBox" class="recommendations hidden">
+        <div class="rec-title">Recommendations</div>
+        <ul id="recommendationList"></ul>
       </div>
     </div>
   </div>
