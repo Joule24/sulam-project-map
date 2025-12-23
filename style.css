@@ -36,43 +36,41 @@ body {
   /* distinct color to differentiate */
 }
 
-/* Overlay behind intro popup */
+/* Overlay */
 .popup-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.5); /* semi-transparent black */
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; /* on top of everything */
+  z-index: 2000;
 }
 
 /* Popup box */
 .popup-content {
-  background-color: #fff;
-  padding: 24px 20px;
-  border-radius: 12px;
-  max-width: 400px;
-  width: 90%;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 26px 24px 20px;
+  border-radius: 18px;
+  max-width: 420px;
+  width: 92%;
   position: relative;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 20px 45px rgba(0,0,0,0.25);
   text-align: center;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Close button */
 .popup-close {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 12px;
+  right: 14px;
   background: none;
   border: none;
   font-size: 22px;
   font-weight: bold;
   cursor: pointer;
-  color: #333;
+  color: #64748b;
   transition: color 0.2s;
 }
 
@@ -80,17 +78,32 @@ body {
   color: #1e40af;
 }
 
+.popup-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.popup-slogan {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
 .intro-features {
   list-style: none;
   padding: 0;
-  margin: 16px 0 10px;
+  margin: 18px 0 20px;
   text-align: left;
 }
 
 .intro-features li {
-  font-size: 18px;
-  color: #374151;
-  padding: 8px;
+  font-size: 17px;
+  color: #334155;
+  padding: 6px 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -98,20 +111,27 @@ body {
 
 /* Got it button */
 .popup-gotit {
-  margin-top: 16px;
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
-  background-color: #1e40af;
+  background: linear-gradient(135deg, #1e40af, #2563eb);
   color: #fff;
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.15s;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .popup-gotit:hover {
-  background-color: #3b82f6;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.35);
   transform: translateY(-1px);
+}
+
+/* Credit */
+.popup-credit {
+  margin-top: 14px;
+  font-size: 11px;
+  color: #64748b;
 }
 
 /* SIDEBAR (overlay) */
