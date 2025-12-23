@@ -193,6 +193,12 @@ function showModal(data) {
 
   // Show fresh recommendations
   showRecommendations(coords, data.id);
+
+  // Reset AI I/O
+  const aiAnswerEl = document.getElementById("aiAnswer");
+  const aiQuestionEl = document.getElementById("aiQuestion");
+  if (aiAnswerEl) aiAnswerEl.textContent = "";
+  if (aiQuestionEl) aiQuestionEl.value = "";
 }
 
 function hideModal() {
@@ -545,6 +551,18 @@ window.addEventListener('DOMContentLoaded', () => {
     activeMapDesktop.fitBounds([[0, 0], [IMG_H, IMG_W]]);
     activeMapMobile.fitBounds([[0, 0], [IMG_H, IMG_W]]);
   });
+
+  // Intro popup logic
+  const introPopup = document.getElementById('mapIntroPopup');
+  const closeIntroBtn = document.getElementById('closeIntroPopup');
+  const gotItBtn = document.getElementById('gotItBtn');
+
+  function closeIntro() {
+    introPopup.style.display = 'none';
+  }
+
+  closeIntroBtn.addEventListener('click', closeIntro);
+  gotItBtn.addEventListener('click', closeIntro);
 });
 
 const sidebarEl = document.getElementById('sidebar');
@@ -615,3 +633,147 @@ window.addEventListener('resize', () => {
   }
 });
 
+// ---------------- AI ASSISTANT (OpenRouter) ----------------
+const OPENROUTER_API_KEY = "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";
+
+async function fetchWikipediaSummary(title) {
+  // Hybrid AI using simple Wikipedia REST API for web data
+  try {
+    const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.extract || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+//AI models used sequentially (fallback if one fails)
+const MODELS = [
+  "mistralai/devstral-2512:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "xiaomi/mimo-v2-flash:free",
+  "z-ai/glm-4.5-air:free"
+];
+
+async function askAIDestination(question) {
+  const current = poiModal._current;
+  if (!current) return "Please select a POI or Zone first.";
+
+  const { title, desc, coords } = current;
+  const lat = coords?.lat;
+  const lng = coords?.lng;
+
+  // Fetch web data
+  const wikiSummary = (await fetchWikipediaSummary(title))?.slice(0, 800);
+
+  // Prepare webResults text
+  const webResults = wikiSummary
+    ? `Wikipedia summary:\n${wikiSummary}`
+    : "No external data found.";
+
+  for (const model of MODELS) {
+    try {
+      const response = await fetch(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": window.location.origin,
+            "X-Title": "KUL City Walk AI Assistant"
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              {
+                role: "system",
+                content: `
+You are a helpful travel assistant.
+Use the provided place information first.
+If it is insufficient, use general world knowledge.
+If external data is included, treat it as factual.
+Keep answers concise and visitor-friendly.
+Do not mention any coordinates or technical details.
+`
+              },
+              {
+                role: "user",
+                content: `
+Place name: ${title}
+
+Description from map database:
+${desc || "No description available."}
+
+Coordinates:
+Latitude: ${lat ?? "Unknown"}
+Longitude: ${lng ?? "Unknown"}
+
+External search results:
+${webResults}
+
+Question:
+${question}
+`
+              }
+            ],
+            max_tokens: 150
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.error) {
+        console.warn(`Model failed: ${model}`, data.error.message);
+        continue; // try next model
+      }
+
+      const content = data.choices?.[0]?.message?.content;
+      if (content && content.trim()) return content;
+
+      console.warn(`Empty response from model: ${model}`);
+      continue;
+    } catch (err) {
+      console.warn(`Request failed for model: ${model}`, err);
+    }
+  }
+  return "⚠️ AI is temporarily unavailable due to free model limits. Please try again in a moment.";
+}
+
+//js hook to wire AI Assistant button
+const aiAskBtn = document.getElementById("aiAskBtn");
+const aiAnswerEl = document.getElementById("aiAnswer");
+const aiQuestionEl = document.getElementById("aiQuestion");
+
+if (aiAskBtn) {
+  aiAskBtn.addEventListener("click", async () => {
+    const q = aiQuestionEl.value.trim();
+    if (!q) return;
+
+    // dot animation when generating response
+    let dots = 0;
+    aiAnswerEl.textContent = "🤖 Thinking";
+    const interval = setInterval(() => {
+      aiAnswerEl.textContent = "🤖 Thinking" + ".".repeat(dots % 4);
+      dots++;
+    }, 500);
+    
+    try {
+      const answer = await askAIDestination(q);
+      clearInterval(interval);
+      aiAnswerEl.textContent = answer;
+    } catch (err) {
+      clearInterval(interval);
+      aiAnswerEl.textContent = "⚠️ Failed to get response.";
+      console.error(err);
+    }
+  });
+
+  // Optional: submit on Enter key
+  aiQuestionEl.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") aiAskBtn.click();
+  });
+}

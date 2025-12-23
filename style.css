@@ -36,6 +36,84 @@ body {
   /* distinct color to differentiate */
 }
 
+/* Overlay behind intro popup */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5); /* semi-transparent black */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* on top of everything */
+}
+
+/* Popup box */
+.popup-content {
+  background-color: #fff;
+  padding: 24px 20px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+/* Close button */
+.popup-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #333;
+  transition: color 0.2s;
+}
+
+.popup-close:hover {
+  color: #1e40af;
+}
+
+.intro-features {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 10px;
+  text-align: left;
+}
+
+.intro-features li {
+  font-size: 18px;
+  color: #374151;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Got it button */
+.popup-gotit {
+  margin-top: 16px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background-color: #1e40af;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.15s;
+}
+
+.popup-gotit:hover {
+  background-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
 /* SIDEBAR (overlay) */
 .sidebar {
   position: absolute;
@@ -509,4 +587,78 @@ body {
 #recommendationList li .rec-title-text {
   font-size: 0.85rem;
   font-weight: 500;
+}
+
+/* Container for AI assistant */
+.ai-box {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Input + button wrapper */
+.ai-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* User input field */
+#aiQuestion {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  outline: none;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#aiQuestion:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 4px rgba(59, 130, 246, 0.3);
+}
+
+/* Ask AI button */
+#aiAskBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background-color: #1e40af;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: transform 0.15s, background-color 0.2s;
+}
+
+#aiAskBtn:hover {
+  transform: scale(1.05);
+  background-color: #3b82f6;
+}
+
+#aiAskBtn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* AI answer box */
+.ai-answer {
+  background-color: #f0f4ff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  min-height: 28px;
+  font-size: 14px;
+  color: #1e3a8a;
+  white-space: pre-wrap;
+  line-height: 1.4;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.05);
+  transition: background-color 0.2s;
 }

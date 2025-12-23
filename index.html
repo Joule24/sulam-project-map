@@ -18,6 +18,23 @@
 
 <body>
   <div class="app">
+    
+    <!-- Map Welcome Popup -->
+    <div id="mapIntroPopup" class="popup-overlay" aria-hidden="false">
+      <div class="popup-content">
+        <button id="closeIntroPopup" class="popup-close" aria-label="Close">&times;</button>
+        <h2>Welcome to KUL City Walk Map</h2>
+        <ul class="intro-features">
+          <li>📍 Explore Points of Interest & Zones</li>
+          <li>🗺️ Tap markers to view place details</li>
+          <li>🤖 Ask our AI assistant about your selected location</li>
+          <li>🔍 Use search to find destinations quickly</li>
+          <li>📋 Copy map links to share with friends</li>
+        </ul>
+
+        <button id="gotItBtn" class="popup-gotit">Got it</button>
+      </div>
+    </div>
 
     <!-- SIDEBAR (overlay) -->
     <aside id="sidebar" class="sidebar" aria-hidden="false">
@@ -83,6 +100,22 @@
       <h2 id="modalTitle"></h2>
       <img id="modalImage" src="" alt="">
       <p id="modalDesc"></p>
+
+      <!-- AI Assistant -->
+      <div class="ai-box">
+        <div class="ai-input-wrapper">
+          <input id="aiQuestion" type="text" placeholder="Ask about this place..." aria-label=" Ask AI" />
+          <button id="aiAskBtn" class="btn small ai-btn" aria-label="Ask AI">
+            <!-- Inline chat icon -->
+             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M2 2c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2v12l-4-4H4c-1.1 0-2-.9-2-2V2z"/>
+             </svg>
+            <span class="ai-btn-label">Ask AI</span>
+          </button>
+        </div>
+        <div id="aiAnswer" class="ai-answer"></div>
+      </div>
+
       <div class="modal-actions">
         <button id="modalShare" class="btn">Copy link</button>
       </div>
