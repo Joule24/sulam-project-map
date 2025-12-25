@@ -406,6 +406,9 @@ body {
   text-align: center;
   position: relative;
   box-shadow: 0 6px 30px rgba(0, 0, 0, 0.25);
+  max-height: 85vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-content img {
