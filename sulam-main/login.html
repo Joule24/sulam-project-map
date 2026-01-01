@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="login.js" defer></script>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f5f5f5;
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    .login-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+      width: 320px;
+      text-align: center;
+    }
+
+    .login-card h2 {
+      margin-bottom: 24px;
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .login-card .btn {
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="login.js"></script>
+  <div class="login-card">
+    <h2>Admin Login</h2>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <button id="backToMap" type="button" class="btn secondary2">Back to Map</button>
+    <button id="loginBtn" type="submit" class="btn">Log In</button>
+    <p class="switch-text">
+      Don’t have an account?
+      <a href="register.html">Sign Up</a>
+    </p>
+  </div>
+  <script src="login.js" defer></script>
+</body>
+
+</html>

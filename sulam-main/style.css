@@ -1,0 +1,687 @@
+:root {
+  --sidebar-w: 320px;
+  --accent: #1e6091;
+  --muted: #666;
+}
+
+/* Global reset */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+/* App layout */
+.app {
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+#adminBtn {
+  background: #ff6b6b;
+  /* distinct color to differentiate */
+}
+
+/* Overlay */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+/* Popup box */
+.popup-content {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 26px 24px 20px;
+  border-radius: 18px;
+  max-width: 420px;
+  width: 92%;
+  position: relative;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.25);
+  text-align: center;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Close button */
+.popup-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #64748b;
+  transition: color 0.2s;
+}
+
+.popup-close:hover {
+  color: #1e40af;
+}
+
+.popup-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.popup-slogan {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
+.intro-features {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 20px;
+  text-align: left;
+}
+
+.intro-features li {
+  font-size: 17px;
+  color: #334155;
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Got it button */
+.popup-gotit {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.popup-gotit:hover {
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Credit */
+.popup-credit {
+  margin-top: 13px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* SIDEBAR (overlay) */
+.sidebar {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  width: var(--sidebar-w);
+  max-height: calc(100vh - 32px);
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(6px);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+  padding: 12px;
+  overflow: auto;
+  z-index: 2200;
+  transition: transform 260ms ease, opacity 260ms ease;
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.sidebar.hidden {
+  transform: translateX(-110%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* header */
+.sidebar-header {
+  margin-bottom: 8px;
+}
+
+.sidebar-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+#poiSearch {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+/* Lists */
+.sidebar-section h4 {
+  margin: 8px 0 6px 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list li {
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.list li:hover {
+  background: rgba(30, 96, 145, 0.05);
+}
+
+/* thumbnail */
+.thumb {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #eee;
+  border: 1px solid #ddd;
+}
+
+/* text block */
+.item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 auto;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.1;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* list actions (right side) */
+.list-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Buttons */
+.sidebar-footer {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn.secondary {
+  background: #666;
+}
+
+.btn.secondary2 {
+  background: #666;
+  margin-bottom: 12px;
+}
+
+.btn.small {
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+/* Map area occupies full app but sidebar overlays it */
+.map-area {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Map containers */
+.map-container {
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  /* thinner border */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  /* subtler shadow */
+  border-radius: 8px;
+  /* slightly smaller radius */
+  background: #fff;
+  /* keep map background white */
+}
+
+/* Desktop map responsive */
+#map-desktop {
+  max-width: 765px;
+  max-height: 525px;
+  margin: auto;
+}
+
+/* Mobile map responsive */
+#map-mobile {
+  width: 100vw;
+  height: calc(100vw * (1050 / 1530));
+  max-width: 1530px;
+  max-height: 1050px;
+}
+
+/* Floating list button for mobile */
+.fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2300;
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  display: none;
+}
+
+/* hide mobile list button by default; shown only on narrow screens */
+#openListBtn { display: none; }
+
+/* small desktop toggle (hidden on small screens) */
+#toggleSidebarBtn {
+  display: inline-block;
+  margin-left: 8px;
+}
+
+/* show mobile floating button only on narrow viewports */
+@media (max-width: 900px) {
+  #openListBtn { display: block; }
+  #toggleSidebarBtn { display: none; } /* hide desktop toggle on mobile */
+}
+
+
+/* Header above map */
+.map-header {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1530px;
+  max-width: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  border-radius: 10px 10px 0 0;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2100;
+}
+
+.map-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Footer below map */
+.map-footer {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1530px;
+  max-width: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  border-radius: 0 0 10px 10px;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #333;
+  z-index: 2100;
+}
+
+/* Modal overlay */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 3000;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal[aria-hidden="false"] {
+  display: flex;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 18px;
+  border-radius: 10px;
+  width: 92%;
+  max-width: 520px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.25);
+  max-height: 85vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-content img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.modal-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Responsive behavior */
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-110%);
+    opacity: 0;
+    pointer-events: none;
+    left: 8px;
+    top: 8px;
+  }
+
+  .sidebar.open {
+    transform: translateX(8px);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #map-desktop {
+    display: none;
+  }
+
+  #map-mobile {
+    display: block;
+  }
+
+  .fab {
+    display: block;
+  }
+}
+
+@media (min-width: 901px) {
+  .sidebar {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #map-desktop {
+    display: block;
+  }
+
+  #map-mobile {
+    display: none;
+  }
+
+  .fab {
+    display: none;
+  }
+}
+
+.leaflet-container {
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+.admin-panel {
+  position: absolute;
+  top: 80px;
+  right: 16px;
+  width: 300px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  z-index: 2500;
+  display: none;
+  /* hidden by default */
+}
+
+.admin-panel h2 {
+  margin-top: 0;
+  font-size: 16px;
+  text-align: center;
+}
+
+.admin-panel .admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-panel input,
+.admin-panel textarea {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  width: 100%;
+}
+
+.recommendations {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.recommendations.hidden {
+  display: none;
+}
+
+.rec-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+#recommendationList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#recommendationList li {
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+#recommendationList li:hover {
+  background: #e6eef8;
+}
+
+/* Recommendation list horizontal layout */
+#recommendationList {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#recommendationList li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100px; /* frame width */
+  cursor: pointer;
+  background: #f5f7fa;
+  border-radius: 6px;
+  padding: 6px;
+  overflow: hidden; /* ensure cropping works */
+  transition: transform 0.15s ease;
+}
+
+#recommendationList li:hover {
+  transform: translateY(-3px);
+  background: #e6eef8;
+}
+
+/* Thumbnail wrapper to crop automatically */
+.rec-thumb-wrapper {
+  width: 80px;
+  height: 80px;
+  overflow: hidden;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.rec-thumb-wrapper img.rec-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* this crops the image to fit the frame */
+  display: block;
+}
+
+/* Title below image */
+#recommendationList li .rec-title-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Container for AI assistant */
+.ai-box {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Input + button wrapper */
+.ai-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* User input field */
+#aiQuestion {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  outline: none;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#aiQuestion:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 4px rgba(59, 130, 246, 0.3);
+}
+
+/* Ask AI button */
+#aiAskBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background-color: #1e40af;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: transform 0.15s, background-color 0.2s;
+}
+
+#aiAskBtn:hover {
+  transform: scale(1.05);
+  background-color: #3b82f6;
+}
+
+#aiAskBtn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* AI answer box */
+.ai-answer {
+  background-color: #f0f4ff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  min-height: 28px;
+  font-size: 14px;
+  color: #1e3a8a;
+  white-space: pre-wrap;
+  line-height: 1.4;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.05);
+  transition: background-color 0.2s;
+}
