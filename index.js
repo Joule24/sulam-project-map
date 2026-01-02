@@ -169,15 +169,52 @@ function showRecommendations(originCoords, excludeId) {
 
     // 3. Each click uses fresh item object
     li.addEventListener('click', () => {
-      activeMapDesktop.setView([item.coords.lat, item.coords.lng], Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom()));
-      activeMapMobile.setView([item.coords.lat, item.coords.lng], Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom()));
-      showModal(item); // triggers new recommendations
+      const fullData = findFullDataById(item.id, item.type);
+      if (!fullData) return;
+
+      activeMapDesktop.setView(
+        [fullData.coords[0], fullData.coords[1]],
+        Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom())
+      );
+
+      activeMapMobile.setView(
+        [fullData.coords[0], fullData.coords[1]],
+        Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom())
+      );
+
+      showModal(fullData);
     });
 
     recommendationList.appendChild(li);
   });
 
   recommendationBox.classList.remove('hidden');
+}
+
+function findFullDataById(id, type) {
+  if (type === 'poi') {
+    const p = poiMarkers.find(p => p.id === id);
+    if (!p) return null;
+    const latlng = p.desktop.getLatLng();
+    return {
+      id: p.id,
+      ...p.data,
+      coords: [latlng.lat, latlng.lng]
+    };
+  }
+
+  if (type === 'zone') {
+    const z = zonePolygons.find(z => z.id === id);
+    if (!z) return null;
+    const center = z.desktop.getBounds().getCenter();
+    return {
+      id: z.id,
+      ...z.data,
+      coords: [center.lat, center.lng]
+    };
+  }
+
+  return null;
 }
 
 // ---------------- MODAL FUNCTIONS ----------------
