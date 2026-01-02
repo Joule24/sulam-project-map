@@ -28,6 +28,9 @@ const modalShareBtn = document.getElementById('modalShare');
 const modalDirectionsBtn = document.getElementById('modalDirections');
 const selectedInfoEl = document.getElementById('selectedInfo');
 const poiSearchEl = document.getElementById('poiSearch');
+const imageLabelEl = document.getElementById('imageLabel');
+const showNowBtn = document.getElementById('showNowBtn');
+const showThenBtn = document.getElementById('showThenBtn');
 
 // ---------------- RECOMMENDATION UI ----------------
 const recommendationBox = document.getElementById('recommendationBox');
@@ -113,7 +116,7 @@ function showRecommendations(originCoords, excludeId) {
       id: p.id,
       title: p.data.title,
       desc: p.data.desc,
-      img: p.data.img || 'placeholder.jpg',
+      img: p.data.thumb || p.data.images?.now?.url || 'placeholder.jpg',
       coords: { lat: p.desktop.getLatLng().lat, lng: p.desktop.getLatLng().lng },
       type: 'poi'
     })),
@@ -181,8 +184,37 @@ function showModal(data) {
 
   // Update modal content
   modalTitle.textContent = data.title || '';
-  modalImage.src = data.img || 'placeholder.jpg';
-  modalImage.alt = data.title || 'POI image';
+  const images = normalizeImages(data);
+
+  // Default to NOW
+  if (images.now) {
+    modalImage.src = images.now.url;
+    imageLabelEl.textContent = images.now.label || 'NOW';
+  } else {
+    modalImage.src = 'placeholder.jpg';
+    imageLabelEl.textContent = '';
+  }
+
+  // Button states
+  showNowBtn.classList.add('active');
+  showThenBtn.classList.remove('active');
+
+  // Toggle handlers
+  showNowBtn.onclick = () => {
+    if (!images.now) return;
+    modalImage.src = images.now.url;
+    imageLabelEl.textContent = images.now.label || 'NOW';
+    showNowBtn.classList.add('active');
+    showThenBtn.classList.remove('active');
+  };
+
+  showThenBtn.onclick = () => {
+    if (!images.then) return;
+    modalImage.src = images.then.url;
+    imageLabelEl.textContent = images.then.label || 'THEN';
+    showThenBtn.classList.add('active');
+    showNowBtn.classList.remove('active');
+  };
   modalDesc.textContent = data.desc || '';
   poiModal.setAttribute('aria-hidden', 'false');
   poiModal._current = { ...data, coords };
@@ -230,6 +262,39 @@ modalDirectionsBtn.addEventListener('click', () => {
   const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   window.open(googleMapsUrl, '_blank');
 });
+
+function normalizeImages(data) {
+  // New structure
+  if (data.images?.now || data.images?.then) {
+    return {
+      now: data.images?.now || null,
+      then: data.images?.then || null
+    };
+  }
+
+  // Legacy fallback
+  if (data.img) {
+    return {
+      now: { url: data.img, label: 'Now' },
+      then: null
+    };
+  }
+
+  return { now: null, then: null };
+}
+
+function getThumbnail(data) {
+  // Prefer explicit thumbnail
+  if (data.thumb) return data.thumb;
+
+  // Prefer NOW image if exists
+  if (data.images?.now?.url) return data.images.now.url;
+
+  // Legacy fallback
+  if (data.img) return data.img;
+
+  return 'placeholder.jpg';
+}
 
 // ---------------- MAP INIT ----------------
 function initMaps() {
@@ -281,7 +346,7 @@ function startListeners() {
           id: doc.id,
           title: d.title,
           desc: d.desc,
-          img: d.img,
+          ...d,
           coords: [lat, lng]
         }));
 
@@ -291,7 +356,7 @@ function startListeners() {
           id: doc.id,
           title: d.title,
           desc: d.desc,
-          img: d.img,
+          ...d,
           coords: [lat, lng]
         }));
 
@@ -330,7 +395,7 @@ function startListeners() {
           id: doc.id,
           title: d.title,
           desc: d.desc,
-          img: d.img,
+          ...d,
           coords: [center.lat, center.lng]
         });
       });
@@ -341,7 +406,7 @@ function startListeners() {
           id: doc.id,
           title: d.title,
           desc: d.desc,
-          img: d.img,
+          ...d,
           coords: [center.lat, center.lng]
         });
       });
@@ -365,7 +430,9 @@ function populatePOIsSidebar(docs) {
     const li = document.createElement('li');
     li.dataset.id = doc.id;
     li.innerHTML = `
-      <img class="thumb" src="${d.thumb || d.img || ''}" alt="${d.title || 'POI'} thumbnail">
+      <img class="thumb"
+     src="${getThumbnail(d)}"
+     alt="${d.title || 'POI'} thumbnail">
       <div class="item-text">
         <div class="title">${d.title}</div>
         <div class="meta">POI</div>
@@ -396,7 +463,7 @@ function populatePOIsSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        ...d,
         coords: [latlngDesktop.lat, latlngDesktop.lng]
       });
     });
@@ -423,7 +490,7 @@ function populatePOIsSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        ...d,
         coords: [latlngDesktop.lat, latlngDesktop.lng]
       });
     });
@@ -439,7 +506,9 @@ function populateZonesSidebar(docs) {
     li.dataset.id = doc.id;
 
     li.innerHTML = `
-      <img class="thumb" src="${d.thumb || d.img || ''}" alt="${d.title || 'Zone'} thumbnail">
+      <img class="thumb"
+     src="${getThumbnail(d)}"
+     alt="${d.title || 'Zone'} thumbnail">
       <div class="item-text">
         <div class="title">${d.title}</div>
         <div class="meta">Zone</div>
@@ -466,7 +535,7 @@ function populateZonesSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        ...d,
         coords: [center.lat, center.lng]
       });
     });
@@ -491,7 +560,7 @@ function populateZonesSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        ...d,
         coords: [center.lat, center.lng]
       });
     });
@@ -559,13 +628,13 @@ window.addEventListener('DOMContentLoaded', () => {
     activeMapDesktop.fitBounds([[0, 0], [IMG_H, IMG_W]]);
     activeMapMobile.fitBounds([[0, 0], [IMG_H, IMG_W]]);
   });
-  
+
   const fitAllBtnSidebar = document.getElementById('fitAllBtn');
   fitAllBtnSidebar.addEventListener('click', () => {
     activeMapDesktop.fitBounds([[0, 0], [IMG_H, IMG_W]]);
     activeMapMobile.fitBounds([[0, 0], [IMG_H, IMG_W]]);
   });
-  
+
   const copyMapLinkBtn = document.getElementById('copyMapLink');
   copyMapLinkBtn.addEventListener('click', () => {
     const url = location.origin + location.pathname;
@@ -785,7 +854,7 @@ if (aiAskBtn) {
       aiAnswerEl.textContent = "🤖 Thinking" + ".".repeat(dots % 4);
       dots++;
     }, 500);
-    
+
     try {
       const answer = await askAIDestination(q);
       clearInterval(interval);

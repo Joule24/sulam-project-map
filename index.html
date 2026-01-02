@@ -18,7 +18,7 @@
 
 <body>
   <div class="app">
-    
+
     <!-- Map Welcome Popup -->
     <div id="mapIntroPopup" class="popup-overlay" aria-hidden="false">
       <div class="popup-content">
@@ -104,7 +104,15 @@
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <button id="closeModal" class="close" aria-label="Close">&times;</button>
       <h2 id="modalTitle"></h2>
-      <img id="modalImage" src="" alt="">
+      <div class="modal-image-wrapper">
+        <div class="image-label" id="imageLabel">NOW</div>
+        <img id="modalImage" src="" alt="">
+      </div>
+
+      <div class="image-toggle">
+        <button id="showNowBtn" class="btn small active">NOW</button>
+        <button id="showThenBtn" class="btn small">THEN</button>
+      </div>
       <p id="modalDesc"></p>
 
       <!-- AI Assistant -->
@@ -113,9 +121,9 @@
           <input id="aiQuestion" type="text" placeholder="Ask about this place..." aria-label=" Ask AI" />
           <button id="aiAskBtn" class="btn small ai-btn" aria-label="Ask AI">
             <!-- Inline chat icon -->
-             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M2 2c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2v12l-4-4H4c-1.1 0-2-.9-2-2V2z"/>
-             </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M2 2c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2v12l-4-4H4c-1.1 0-2-.9-2-2V2z" />
+            </svg>
             <span class="ai-btn-label">Ask AI</span>
           </button>
         </div>

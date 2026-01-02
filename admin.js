@@ -36,8 +36,12 @@ const existingSelect = document.getElementById('existingSelect');
 const formContainer = document.getElementById('formContainer');
 const titleInput = document.getElementById('titleInput');
 const descInput = document.getElementById('descInput');
-const imgFileInput = document.getElementById('poiImage');
-const previewImage = document.getElementById('previewImage');
+// const imgFileInput = document.getElementById('poiImage');
+// const previewImage = document.getElementById('previewImage');
+const nowImageInput = document.getElementById('nowImageInput');
+const thenImageInput = document.getElementById('thenImageInput');
+const nowPreview = document.getElementById('nowPreview');
+const thenPreview = document.getElementById('thenPreview');
 const xInput = document.getElementById('xInput');
 const yInput = document.getElementById('yInput');
 const coordsListEl = document.getElementById('coords-list');
@@ -61,7 +65,9 @@ let currentPolygon = null;
 let polygonCoords = [];
 
 // store preview dataURL (if any)
-let previewDataURL = "";
+// let previewDataURL = "";
+let nowImageDataURL = "";
+let thenImageDataURL = "";
 
 // ---------------- SHARED CLICK HANDLER ----------------
 function polygonClickHandler(e) {
@@ -139,13 +145,16 @@ async function loadExisting(type) {
 
 // ---------------- HELPERS ----------------
 function setFormEnabled(enabled) {
-  // enabled = true -> allow editing; false -> disable inputs (used for "remove")
-  [titleInput, descInput, imgFileInput, xInput, yInput].forEach(el => {
+  // text + coords only
+  [titleInput, descInput, xInput, yInput].forEach(el => {
     el.disabled = !enabled;
     el.classList.toggle('muted', !enabled);
   });
 
-  // toggle map click handling for polygon/poi editing
+  // image inputs only disabled, previews always visible
+  nowImageInput.disabled = !enabled;
+  thenImageInput.disabled = !enabled;
+
   if (!enabled) {
     map.off('click', polygonClickHandler);
   } else {
@@ -214,12 +223,31 @@ existingSelect.addEventListener('change', async () => {
 
     titleInput.value = data.title || '';
     descInput.value = data.desc || '';
-    previewDataURL = data.img || '';
-    if (previewDataURL) {
-      previewImage.src = previewDataURL;
-      previewImage.style.display = 'block';
+    // previewDataURL = data.img || '';
+    // if (previewDataURL) {
+    //   previewImage.src = previewDataURL;
+    //   previewImage.style.display = 'block';
+    // } else {
+    //   previewImage.style.display = 'none';
+    // }
+
+    // Reset
+    nowImageDataURL = '';
+    thenImageDataURL = '';
+
+    // Load images
+    if (data.images?.now?.url) {
+      nowPreview.src = data.images.now.url;
+      nowPreview.style.display = 'block';
     } else {
-      previewImage.style.display = 'none';
+      nowPreview.style.display = 'none';
+    }
+
+    if (data.images?.then?.url) {
+      thenPreview.src = data.images.then.url;
+      thenPreview.style.display = 'block';
+    } else {
+      thenPreview.style.display = 'none';
     }
 
     if (typeSelect.value === 'poi') {
@@ -264,27 +292,31 @@ if (resetCoordsBtn) {
 }
 
 // ---------------- FILE INPUT PREVIEW + COMPRESSION ----------------
-if (imgFileInput) {
-  imgFileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) { 
-      previewImage.style.display = 'none'; 
-      previewDataURL = ''; 
-      return; 
-    }
+nowImageInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) {
+    nowPreview.style.display = 'none';
+    nowImageDataURL = '';
+    return;
+  }
 
-    try {
-      previewDataURL = await compressImage(file, 1024, 0.7); // resize + compress
-      previewImage.src = previewDataURL;
-      previewImage.style.display = 'block';
-    } catch (err) {
-      console.error("Image processing error:", err);
-      alert("Failed to process image. Try a smaller file.");
-      previewImage.style.display = 'none';
-      previewDataURL = '';
-    }
-  });
-}
+  nowImageDataURL = await compressImage(file, 1024, 0.7);
+  nowPreview.src = nowImageDataURL;
+  nowPreview.style.display = 'block';
+});
+
+thenImageInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) {
+    thenPreview.style.display = 'none';
+    thenImageDataURL = '';
+    return;
+  }
+
+  thenImageDataURL = await compressImage(file, 1024, 0.7);
+  thenPreview.src = thenImageDataURL;
+  thenPreview.style.display = 'block';
+});
 
 // ---------------- HELPER FUNCTION: COMPRESS IMAGE ----------------
 function compressImage(file, maxSize = 1024, quality = 0.7) {
@@ -348,11 +380,25 @@ if (confirmGlobalBtn) {
 
     try {
       if (actionSelect.value === 'add') {
+        if (!nowImageDataURL) {
+          return alert("NOW image is required.");
+        }
+
         const data = {
           title: titleInput.value,
           desc: descInput.value,
-          img: previewDataURL || ''
+          images: {
+            now: {
+              url: nowImageDataURL,
+              label: "Now"
+            },
+            then: thenImageDataURL
+              ? { url: thenImageDataURL, label: "Then" }
+              : null
+          },
+          thumb: nowImageDataURL
         };
+
         if (typeSelect.value === 'poi') data.coords = { x: Number(xInput.value || 0), y: Number(yInput.value || 0) };
         if (typeSelect.value === 'zone') data.coordinates = polygonCoords.map(c => ({ x: c[0], y: c[1] }));
         if (!confirm('Confirm adding new item?')) return;
@@ -361,15 +407,40 @@ if (confirmGlobalBtn) {
       } else if (actionSelect.value === 'edit') {
         if (!existingSelect.value) return alert('Pick an existing item to edit.');
         const docRef = doc(db, colName, existingSelect.value);
-        const data = {
+
+        const updateData = {
           title: titleInput.value,
-          desc: descInput.value,
-          img: previewDataURL || ''
+          desc: descInput.value
         };
-        if (typeSelect.value === 'poi') data.coords = { x: Number(xInput.value || 0), y: Number(yInput.value || 0) };
-        if (typeSelect.value === 'zone') data.coordinates = polygonCoords.map(c => ({ x: c[0], y: c[1] }));
+
+        // NOW image — overwrite if new upload
+        if (nowImageDataURL) {
+          updateData["images.now"] = {
+            url: nowImageDataURL,
+            label: "Now"
+          };
+          updateData.thumb = nowImageDataURL;
+        }
+
+        // THEN image — overwrite if new upload
+        if (thenImageDataURL) {
+          updateData["images.then"] = {
+            url: thenImageDataURL,
+            label: "Then"
+          };
+        }
+
+        // coords
+        if (typeSelect.value === 'poi') {
+          updateData.coords = { x: Number(xInput.value || 0), y: Number(yInput.value || 0) };
+        }
+
+        if (typeSelect.value === 'zone') {
+          updateData.coordinates = polygonCoords.map(c => ({ x: c[0], y: c[1] }));
+        }
+
         if (!confirm('Confirm updating item?')) return;
-        await updateDoc(docRef, data);
+        await updateDoc(docRef, updateData);
         statusMsg.textContent = 'Item updated successfully!';
       } else if (actionSelect.value === 'remove') {
         if (!existingSelect.value) return alert('Pick an existing item to remove.');
@@ -417,10 +488,12 @@ logoutBtn.addEventListener('click', async () => {
 function resetForm() {
   titleInput.value = '';
   descInput.value = '';
-  imgFileInput.value = '';
-  previewImage.src = '';
-  previewImage.style.display = 'none';
-  previewDataURL = '';
+  nowImageInput.value = '';
+  thenImageInput.value = '';
+  nowPreview.style.display = 'none';
+  thenPreview.style.display = 'none';
+  nowImageDataURL = '';
+  thenImageDataURL = '';
 
   xInput.value = '';
   yInput.value = '';

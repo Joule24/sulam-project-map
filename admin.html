@@ -109,9 +109,18 @@
       <label for="descInput">Description</label>
       <textarea id="descInput"></textarea>
 
-      <label for="poiImage">Upload Image</label>
-      <input type="file" id="poiImage" accept="image/*">
-      <img id="previewImage" src="" alt="Preview" style="max-width:200px; display:none; margin-bottom:8px;">
+      <label>NOW Image (Required)</label>
+      <input type="file" id="nowImageInput" accept="image/*">
+      <img id="nowPreview" style="max-width:200px; display:none; margin-bottom:8px;">
+
+      <label>THEN Image (Optional)</label>
+      <input type="file" id="thenImageInput" accept="image/*">
+      <img id="thenPreview" style="max-width:200px; display:none; margin-bottom:8px;">
+
+      <!-- <label>
+        <input type="checkbox" id="removeThenCheckbox">
+        Remove existing THEN image
+      </label> -->
 
       <div id="coordsInputs">
         <label>Coordinates</label>
