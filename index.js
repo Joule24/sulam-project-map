@@ -116,8 +116,11 @@ function showRecommendations(originCoords, excludeId) {
       id: p.id,
       title: p.data.title,
       desc: p.data.desc,
-      img: p.data.thumb || p.data.images?.now?.url || 'placeholder.jpg',
-      coords: { lat: p.desktop.getLatLng().lat, lng: p.desktop.getLatLng().lng },
+      img: getThumbnail(p.data),
+      coords: {
+        lat: p.desktop.getLatLng().lat,
+        lng: p.desktop.getLatLng().lng
+      },
       type: 'poi'
     })),
     ...zonePolygons.map(z => {
@@ -126,8 +129,11 @@ function showRecommendations(originCoords, excludeId) {
         id: z.id,
         title: z.data.title,
         desc: z.data.desc,
-        img: z.data.img || 'placeholder.jpg',
-        coords: { lat: center.lat, lng: center.lng },
+        img: getThumbnail(z.data),
+        coords: {
+          lat: center.lat,
+          lng: center.lng
+        },
         type: 'zone'
       };
     })
