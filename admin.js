@@ -137,7 +137,7 @@ async function loadExisting(type) {
 // ---------------- HELPERS ----------------
 function setFormEnabled(enabled) {
   // enabled = true -> allow editing; false -> disable inputs (used for "remove")
-  [titleInput, descInput, imgFileInput, xInput, yInput, realWorldLatInput, realWorldLngInput].forEach(el => {
+  [titleInput, descInput, xInput, yInput, realWorldLatInput, realWorldLngInput].forEach(el => {
     el.disabled = !enabled;
     el.classList.toggle('muted', !enabled);
   });
@@ -439,9 +439,9 @@ if (confirmGlobalBtn) {
         const data = {
           title: titleInput.value,
           desc: descInput.value,
-          img: previewDataURL || ''
         };
-
+        
+        const updateData = {};
         // NOW image — overwrite if new upload
         if (nowImageDataURL) {
           updateData["images.now"] = {
@@ -476,7 +476,7 @@ if (confirmGlobalBtn) {
         }
         if (typeSelect.value === 'zone') data.coordinates = polygonCoords.map(c => ({ x: c[0], y: c[1] }));
         if (!confirm('Confirm updating item?')) return;
-        await updateDoc(docRef, data);
+        await updateDoc(docRef, { ...data, ...updateData });
         statusMsg.textContent = 'Item updated successfully!';
       } else if (actionSelect.value === 'remove') {
         if (!existingSelect.value) return alert('Pick an existing item to remove.');
