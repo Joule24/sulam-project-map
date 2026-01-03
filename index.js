@@ -1,20 +1,18 @@
 // index.js (Firestore dynamic POIs & Zones - desktop + mobile)
 
 // ---------------- FIREBASE SETUP ----------------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyA093rrUBlUG4tDnGUdyql0-c7m-E2DDHw",
-  authDomain: "sulam-project-map.firebaseapp.com",
-  projectId: "sulam-project-map",
-  storageBucket: "sulam-project-map.firebasestorage.app",
-  messagingSenderId: "402597128748",
-  appId: "1:402597128748:web:f73f4b44e44fcb55bfff89",
-  measurementId: "G-SDHPJ5G431"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import { googleMapURL, IMG_W, IMG_H } from "./config.js";
+import { firebaseInitializer, db } from "./helper/initializeFirebase.js";
+import { tracking } from "./helper/gpsTracking.js";
+import { setupAIAssistant } from "./AI_assistant.js";
+
+// Static asset URLs (no bundler on Vercel)
+const bwmMapImg = "assets/bwm_map3.jpg";
+const youIconImg = "assets/you_icon.jpg";
+
+firebaseInitializer();
 
 // ---------------- UI REFERENCES ----------------
 const markerListEl = document.getElementById('markerList');
@@ -28,22 +26,17 @@ const modalShareBtn = document.getElementById('modalShare');
 const modalDirectionsBtn = document.getElementById('modalDirections');
 const selectedInfoEl = document.getElementById('selectedInfo');
 const poiSearchEl = document.getElementById('poiSearch');
-const imageLabelEl = document.getElementById('imageLabel');
-const showNowBtn = document.getElementById('showNowBtn');
-const showThenBtn = document.getElementById('showThenBtn');
 
 // ---------------- RECOMMENDATION UI ----------------
 const recommendationBox = document.getElementById('recommendationBox');
 const recommendationList = document.getElementById('recommendationList');
 
 // ---------------- MAP CONFIG ----------------
-const IMAGE_FILENAME = "bwm_map3.jpg";
-const IMG_W = 1530;
-const IMG_H = 1050;
 const bounds = [[0, 0], [IMG_H, IMG_W]];
 
-let activeMapDesktop = null;
-let activeMapMobile = null;
+// Exported so helper modules (e.g. tracking) can receive references if needed
+export let activeMapDesktop = null;
+export let activeMapMobile = null;
 let markerClusterGroupDesktop = null;
 let markerClusterGroupMobile = null;
 let poiMarkers = []; // { id, desktop, mobile }
@@ -51,7 +44,7 @@ let zonePolygons = []; // { id, desktop, mobile }
 
 // ---------------- USER TRACKING ----------------
 const youIcon = L.icon({
-  iconUrl: 'you_icon.jpg',
+  iconUrl: youIconImg,
   iconSize: [32, 32],
   iconAnchor: [16, 16]
 });
@@ -59,22 +52,8 @@ const youIcon = L.icon({
 let youMarkerDesktop = null;
 let youMarkerMobile = null;
 
-const mapBoundsGPS = {
-  topLeft: { lat: 2.9817734396960933, lng: 101.5108517014077 },   // adjust to your actual map latitude
-  bottomRight: { lat: 2.981656921540031, lng: 101.51112863952406 }    // adjust to your actual map longitude
-};
 
-function latLngToPixel(lat, lng) {
-  const { topLeft, bottomRight } = mapBoundsGPS;
 
-  // Latitude → Y (top-left is 0)
-  const y = ((lat - bottomRight.lat) / (topLeft.lat - bottomRight.lat)) * IMG_H;
-
-  // Longitude → X (left is 0)
-  const x = ((lng - topLeft.lng) / (bottomRight.lng - topLeft.lng)) * IMG_W;
-
-  return [y, x];
-}
 
 // ---------------- RECOMMENDATION LOGIC ----------------
 function distance(a, b) {
@@ -83,26 +62,6 @@ function distance(a, b) {
   return Math.sqrt(dy * dy + dx * dx);
 }
 
-function getAllPlaces() {
-  const pois = poiMarkers.map(p => ({
-    id: p.id,
-    title: p.data.title,
-    coords: p.desktop.getLatLng(),
-    type: 'poi'
-  }));
-
-  const zones = zonePolygons.map(z => {
-    const center = z.desktop.getBounds().getCenter();
-    return {
-      id: z.id,
-      title: z.data.title,
-      coords: center,
-      type: 'zone'
-    };
-  });
-
-  return [...pois, ...zones];
-}
 
 function showRecommendations(originCoords, excludeId) {
   if (!originCoords) {
@@ -110,17 +69,16 @@ function showRecommendations(originCoords, excludeId) {
     return;
   }
 
+
+
   // 1. Recompute all places fresh
   const allPlaces = [
     ...poiMarkers.map(p => ({
       id: p.id,
       title: p.data.title,
       desc: p.data.desc,
-      img: getThumbnail(p.data),
-      coords: {
-        lat: p.desktop.getLatLng().lat,
-        lng: p.desktop.getLatLng().lng
-      },
+      img: p.data.img || 'placeholder.jpg',
+      coords: { lat: p.desktop.getLatLng().lat, lng: p.desktop.getLatLng().lng },
       type: 'poi'
     })),
     ...zonePolygons.map(z => {
@@ -129,11 +87,8 @@ function showRecommendations(originCoords, excludeId) {
         id: z.id,
         title: z.data.title,
         desc: z.data.desc,
-        img: getThumbnail(z.data),
-        coords: {
-          lat: center.lat,
-          lng: center.lng
-        },
+        img: z.data.img || 'placeholder.jpg',
+        coords: { lat: center.lat, lng: center.lng },
         type: 'zone'
       };
     })
@@ -169,20 +124,9 @@ function showRecommendations(originCoords, excludeId) {
 
     // 3. Each click uses fresh item object
     li.addEventListener('click', () => {
-      const fullData = findFullDataById(item.id, item.type);
-      if (!fullData) return;
-
-      activeMapDesktop.setView(
-        [fullData.coords[0], fullData.coords[1]],
-        Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom())
-      );
-
-      activeMapMobile.setView(
-        [fullData.coords[0], fullData.coords[1]],
-        Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom())
-      );
-
-      showModal(fullData);
+      activeMapDesktop.setView([item.coords.lat, item.coords.lng], Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom()));
+      activeMapMobile.setView([item.coords.lat, item.coords.lng], Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom()));
+      showModal(item); // triggers new recommendations
     });
 
     recommendationList.appendChild(li);
@@ -191,35 +135,9 @@ function showRecommendations(originCoords, excludeId) {
   recommendationBox.classList.remove('hidden');
 }
 
-function findFullDataById(id, type) {
-  if (type === 'poi') {
-    const p = poiMarkers.find(p => p.id === id);
-    if (!p) return null;
-    const latlng = p.desktop.getLatLng();
-    return {
-      id: p.id,
-      ...p.data,
-      coords: [latlng.lat, latlng.lng]
-    };
-  }
-
-  if (type === 'zone') {
-    const z = zonePolygons.find(z => z.id === id);
-    if (!z) return null;
-    const center = z.desktop.getBounds().getCenter();
-    return {
-      id: z.id,
-      ...z.data,
-      coords: [center.lat, center.lng]
-    };
-  }
-
-  return null;
-}
-
 // ---------------- MODAL FUNCTIONS ----------------
-function showModal(data) {
-  // Normalize coords: always {lat, lng}
+export const showModal = function showModal(data) {
+  // Normalize coords: always {lat, lng} (these are pixel coordinates for map display)
   let coords = data.coords;
   if (Array.isArray(coords)) {
     coords = { lat: coords[0], lng: coords[1] };
@@ -227,47 +145,18 @@ function showModal(data) {
 
   // Update modal content
   modalTitle.textContent = data.title || '';
-  const images = normalizeImages(data);
-
-  // Default to NOW
-  if (images.now) {
-    modalImage.src = images.now.url;
-    imageLabelEl.textContent = images.now.label || 'NOW';
-  } else {
-    modalImage.src = 'placeholder.jpg';
-    imageLabelEl.textContent = '';
-  }
-
-  // Button states
-  showNowBtn.classList.add('active');
-  showThenBtn.classList.remove('active');
-
-  // Toggle handlers
-  showNowBtn.onclick = () => {
-    if (!images.now) return;
-    modalImage.src = images.now.url;
-    imageLabelEl.textContent = images.now.label || 'NOW';
-    showNowBtn.classList.add('active');
-    showThenBtn.classList.remove('active');
-  };
-
-  showThenBtn.onclick = () => {
-    if (!images.then) return;
-    modalImage.src = images.then.url;
-    imageLabelEl.textContent = images.then.label || 'THEN';
-    showThenBtn.classList.add('active');
-    showNowBtn.classList.remove('active');
-  };
+  modalImage.src = data.img || 'placeholder.jpg';
+  modalImage.alt = data.title || 'POI image';
   modalDesc.textContent = data.desc || '';
   poiModal.setAttribute('aria-hidden', 'false');
-  poiModal._current = { ...data, coords };
+  poiModal._current = { ...data, coords, realWorldCoords: data.realWorldCoords };
   selectedInfoEl.textContent = data.title || '';
 
-  // Center maps
+  // Center maps (use pixel coordinates)
   activeMapDesktop.setView([coords.lat, coords.lng], Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom()));
   activeMapMobile.setView([coords.lat, coords.lng], Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom()));
 
-  // Show fresh recommendations
+  // Show fresh recommendations (use pixel coordinates for distance calculation)
   showRecommendations(coords, data.id);
 
   // Reset AI I/O
@@ -275,6 +164,19 @@ function showModal(data) {
   const aiQuestionEl = document.getElementById("aiQuestion");
   if (aiAnswerEl) aiAnswerEl.textContent = "";
   if (aiQuestionEl) aiQuestionEl.value = "";
+}
+
+// Helper function to get coordinates for Google Maps (real-world if available, else pixel)
+function getGoogleMapsCoords(data) {
+  if (data.realWorldCoords?.lat != null && data.realWorldCoords?.lng != null) {
+    return { lat: data.realWorldCoords.lat, lng: data.realWorldCoords.lng };
+  }
+  // Fallback to pixel coordinates
+  let coords = data.coords;
+  if (Array.isArray(coords)) {
+    coords = { lat: coords[0], lng: coords[1] };
+  }
+  return coords;
 }
 
 function hideModal() {
@@ -300,50 +202,18 @@ modalShareBtn.addEventListener('click', () => {
 });
 
 modalDirectionsBtn.addEventListener('click', () => {
-  if (!poiModal._current || !poiModal._current.coords) return;
-  const { lat, lng } = poiModal._current.coords;
-  const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  if (!poiModal._current) return;
+  const coords = getGoogleMapsCoords(poiModal._current);
+  if (!coords || coords.lat == null || coords.lng == null) return;
+  const googleMapsUrl = `${googleMapURL}${coords.lat},${coords.lng}`;
   window.open(googleMapsUrl, '_blank');
 });
-
-function normalizeImages(data) {
-  // New structure
-  if (data.images?.now || data.images?.then) {
-    return {
-      now: data.images?.now || null,
-      then: data.images?.then || null
-    };
-  }
-
-  // Legacy fallback
-  if (data.img) {
-    return {
-      now: { url: data.img, label: 'Now' },
-      then: null
-    };
-  }
-
-  return { now: null, then: null };
-}
-
-function getThumbnail(data) {
-  // Prefer explicit thumbnail
-  if (data.thumb) return data.thumb;
-
-  // Prefer NOW image if exists
-  if (data.images?.now?.url) return data.images.now.url;
-
-  // Legacy fallback
-  if (data.img) return data.img;
-
-  return 'placeholder.jpg';
-}
 
 // ---------------- MAP INIT ----------------
 function initMaps() {
   // Desktop
   activeMapDesktop = L.map('map-desktop', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 3, zoomControl: true, attributionControl: false, maxBounds: bounds, maxBoundsViscosity: 0.8 });
-  L.imageOverlay(IMAGE_FILENAME, bounds).addTo(activeMapDesktop);
+  L.imageOverlay(bwmMapImg, bounds).addTo(activeMapDesktop);
   activeMapDesktop.fitBounds(bounds);
   markerClusterGroupDesktop = L.markerClusterGroup();
   activeMapDesktop.addLayer(markerClusterGroupDesktop);
@@ -358,7 +228,7 @@ function initMaps() {
     maxBounds: bounds,        // <-- restrict map to image bounds
     maxBoundsViscosity: 0.8   // <-- smooth bounce-back effect
   });
-  L.imageOverlay(IMAGE_FILENAME, bounds).addTo(activeMapMobile);
+  L.imageOverlay(bwmMapImg, bounds).addTo(activeMapMobile);
   activeMapMobile.fitBounds(bounds);
   markerClusterGroupMobile = L.markerClusterGroup();
   activeMapMobile.addLayer(markerClusterGroupMobile);
@@ -384,24 +254,21 @@ function startListeners() {
       const lng = Number(d.coords?.y);
       if (isNaN(lat) || isNaN(lng)) return;
 
+      const modalData = {
+        id: doc.id,
+        title: d.title,
+        desc: d.desc,
+        img: d.img,
+        coords: [lat, lng],
+        realWorldCoords: d.realWorldCoords || null
+      };
+
       const markerDesktop = L.marker([lat, lng])
-        .on('click', () => showModal({
-          id: doc.id,
-          title: d.title,
-          desc: d.desc,
-          ...d,
-          coords: [lat, lng]
-        }));
+        .on('click', () => showModal(modalData));
 
 
       const markerMobile = L.marker([lat, lng])
-        .on('click', () => showModal({
-          id: doc.id,
-          title: d.title,
-          desc: d.desc,
-          ...d,
-          coords: [lat, lng]
-        }));
+        .on('click', () => showModal(modalData));
 
 
       // Add markers straight to maps (NO CLUSTERING)
@@ -432,26 +299,22 @@ function startListeners() {
     snapshot.forEach(doc => {
       const d = doc.data();
       const coords = d.coordinates.map(c => [c.x, c.y]); // Leaflet uses [lat, lng] = [y, x]
+      const tempPoly = L.polygon(coords);
+      const center = tempPoly.getBounds().getCenter();
+      const modalData = {
+        id: doc.id,
+        title: d.title,
+        desc: d.desc,
+        img: d.img,
+        coords: [center.lat, center.lng],
+        realWorldCoords: d.realWorldCoords || null
+      };
       const polyDesktop = L.polygon(coords, { color: '#1e6091', fillOpacity: 0.28, weight: 2 }).on('click', () => {
-        const center = polyDesktop.getBounds().getCenter();
-        showModal({
-          id: doc.id,
-          title: d.title,
-          desc: d.desc,
-          ...d,
-          coords: [center.lat, center.lng]
-        });
+        showModal(modalData);
       });
 
       const polyMobile = L.polygon(coords, { color: '#1e6091', fillOpacity: 0.28, weight: 2 }).on('click', () => {
-        const center = polyDesktop.getBounds().getCenter();
-        showModal({
-          id: doc.id,
-          title: d.title,
-          desc: d.desc,
-          ...d,
-          coords: [center.lat, center.lng]
-        });
+        showModal(modalData);
       });
 
 
@@ -473,9 +336,7 @@ function populatePOIsSidebar(docs) {
     const li = document.createElement('li');
     li.dataset.id = doc.id;
     li.innerHTML = `
-      <img class="thumb"
-     src="${getThumbnail(d)}"
-     alt="${d.title || 'POI'} thumbnail">
+      <img class="thumb" src="${d.thumb || d.img || ''}" alt="${d.title || 'POI'} thumbnail">
       <div class="item-text">
         <div class="title">${d.title}</div>
         <div class="meta">POI</div>
@@ -506,16 +367,20 @@ function populatePOIsSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        ...d,
-        coords: [latlngDesktop.lat, latlngDesktop.lng]
+        img: d.img,
+        coords: [latlngDesktop.lat, latlngDesktop.lng],
+        realWorldCoords: d.realWorldCoords || null
       });
     });
 
-    // SHARE button
+    // SHARE button - copy Google Maps URL for this POI
     li.querySelector('[data-action="share"]').addEventListener('click', (e) => {
       e.stopPropagation();
-      const hash = `#poi=${encodeURIComponent(doc.id)}`;
-      navigator.clipboard.writeText(location.origin + location.pathname + hash);
+      const markerObj = poiMarkers.find(m => m.id === doc.id);
+      if (!markerObj) return;
+      const coords = getGoogleMapsCoords({ coords: markerObj.desktop.getLatLng(), realWorldCoords: markerObj.data.realWorldCoords });
+      const googleMapsUrl = `${googleMapURL}${coords.lat},${coords.lng}`;
+      navigator.clipboard.writeText(googleMapsUrl);
     });
 
     // Click anywhere on the list item
@@ -533,8 +398,9 @@ function populatePOIsSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        ...d,
-        coords: [latlngDesktop.lat, latlngDesktop.lng]
+        img: d.img,
+        coords: [latlngDesktop.lat, latlngDesktop.lng],
+        realWorldCoords: d.realWorldCoords || null
       });
     });
   });
@@ -549,9 +415,7 @@ function populateZonesSidebar(docs) {
     li.dataset.id = doc.id;
 
     li.innerHTML = `
-      <img class="thumb"
-     src="${getThumbnail(d)}"
-     alt="${d.title || 'Zone'} thumbnail">
+      <img class="thumb" src="${d.thumb || d.img || ''}" alt="${d.title || 'Zone'} thumbnail">
       <div class="item-text">
         <div class="title">${d.title}</div>
         <div class="meta">Zone</div>
@@ -578,15 +442,21 @@ function populateZonesSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        ...d,
-        coords: [center.lat, center.lng]
+        img: d.img,
+        coords: [center.lat, center.lng],
+        realWorldCoords: d.realWorldCoords || null
       });
     });
 
-    // SHARE button
-    li.querySelector('[data-action="share"]').addEventListener('click', () => {
-      const hash = `#poi=${encodeURIComponent(doc.id)}`;
-      navigator.clipboard.writeText(location.origin + location.pathname + hash);
+    // SHARE button - copy Google Maps URL for this Zone (center point)
+    li.querySelector('[data-action="share"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const polyObj = zonePolygons.find(z => z.id === doc.id);
+      if (!polyObj) return;
+      const center = polyObj.desktop.getBounds().getCenter();
+      const coords = getGoogleMapsCoords({ coords: center, realWorldCoords: polyObj.data.realWorldCoords });
+      const googleMapsUrl = `${googleMapURL}${coords.lat},${coords.lng}`;
+      navigator.clipboard.writeText(googleMapsUrl);
     });
 
     // Click anywhere on the list item
@@ -603,8 +473,9 @@ function populateZonesSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        ...d,
-        coords: [center.lat, center.lng]
+        img: d.img,
+        coords: [center.lat, center.lng],
+        realWorldCoords: d.realWorldCoords || null
       });
     });
   });
@@ -625,46 +496,50 @@ poiSearchEl.addEventListener('input', () => {
 });
 
 // ---------------- GPS TRACKING ----------------
-function trackUser() {
-  if (!navigator.geolocation) {
-    alert("Geolocation is not supported by your browser");
-    return;
-  }
+// function trackUser() {
+//   if (!navigator.geolocation) {
+//     alert("Geolocation is not supported by your browser");
+//     return;
+//   }
 
-  navigator.geolocation.watchPosition((position) => {
-    const lat = position.coords.latitude;
-    const lng = position.coords.longitude;
+//   navigator.geolocation.watchPosition((position) => {
+//     const lat = position.coords.latitude;
+//     const lng = position.coords.longitude;
 
-    const coords = latLngToPixel(lat, lng); // convert GPS → map pixel
+//     const coords = latLngToPixel(lat, lng); // convert GPS → map pixel
 
-    // Desktop
-    if (youMarkerDesktop) {
-      youMarkerDesktop.setLatLng(coords);
-    } else {
-      youMarkerDesktop = L.marker(coords, { icon: youIcon }).addTo(activeMapDesktop);
-    }
+//     // Desktop
+//     if (youMarkerDesktop) {
+//       youMarkerDesktop.setLatLng(coords);
+//     } else {
+//       youMarkerDesktop = L.marker(coords, { icon: youIcon }).addTo(activeMapDesktop);
+//     }
 
-    // Mobile
-    if (youMarkerMobile) {
-      youMarkerMobile.setLatLng(coords);
-    } else {
-      youMarkerMobile = L.marker(coords, { icon: youIcon }).addTo(activeMapMobile);
-    }
+//     // Mobile
+//     if (youMarkerMobile) {
+//       youMarkerMobile.setLatLng(coords);
+//     } else {
+//       youMarkerMobile = L.marker(coords, { icon: youIcon }).addTo(activeMapMobile);
+//     }
 
-  }, (err) => {
-    console.error("GPS error:", err);
-  }, {
-    enableHighAccuracy: true,
-    maximumAge: 1000
-  });
-}
+//   }, (err) => {
+//     console.error("GPS error:", err);
+//   }, {
+//     enableHighAccuracy: true,
+//     maximumAge: 1000
+//   });
+// }
 
 // ---------------- INIT ----------------
 window.addEventListener('DOMContentLoaded', () => {
   initMaps();
   startListeners();
 
-  trackUser(); // <-- start real-time GPS tracking
+  // start real-time GPS tracking (pass map instances explicitly)
+  tracking(activeMapDesktop, activeMapMobile);
+
+  // wire AI assistant (uses current modal selection)
+  setupAIAssistant(() => poiModal._current);
 
   const fitAllBtnTop = document.getElementById('fitAllBtnTop');
   fitAllBtnTop.addEventListener('click', () => {
@@ -696,20 +571,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function closeIntro() {
     introPopup.style.display = 'none';
-    sessionStorage.setItem("introSeen", "true");
   }
 
   closeIntroBtn.addEventListener('click', closeIntro);
   gotItBtn.addEventListener('click', closeIntro);
-  // show only once per session
-  if (!sessionStorage.getItem("introSeen")) {
-    introPopup.style.display = "flex";
-  } else {
-    introPopup.style.display = "none";
-  }
-  document.getElementById("infoBtn").addEventListener("click", () => {
-    document.getElementById("mapIntroPopup").style.display = "flex";
-  });
 });
 
 const sidebarEl = document.getElementById('sidebar');
@@ -780,147 +645,3 @@ window.addEventListener('resize', () => {
   }
 });
 
-// ---------------- AI ASSISTANT (OpenRouter) ----------------
-const OPENROUTER_API_KEY = "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";
-
-async function fetchWikipediaSummary(title) {
-  // Hybrid AI using simple Wikipedia REST API for web data
-  try {
-    const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.extract || null;
-  } catch (e) {
-    return null;
-  }
-}
-
-//AI models used sequentially (fallback if one fails)
-const MODELS = [
-  "mistralai/devstral-2512:free",
-  "nvidia/nemotron-3-nano-30b-a3b:free",
-  "xiaomi/mimo-v2-flash:free",
-  "z-ai/glm-4.5-air:free"
-];
-
-async function askAIDestination(question) {
-  const current = poiModal._current;
-  if (!current) return "Please select a POI or Zone first.";
-
-  const { title, desc, coords } = current;
-  const lat = coords?.lat;
-  const lng = coords?.lng;
-
-  // Fetch web data
-  const wikiSummary = (await fetchWikipediaSummary(title))?.slice(0, 800);
-
-  // Prepare webResults text
-  const webResults = wikiSummary
-    ? `Wikipedia summary:\n${wikiSummary}`
-    : "No external data found.";
-
-  for (const model of MODELS) {
-    try {
-      const response = await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": window.location.origin,
-            "X-Title": "KUL City Walk AI Assistant"
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              {
-                role: "system",
-                content: `
-You are a helpful travel assistant.
-Use the provided place information first.
-If it is insufficient, use general world knowledge.
-If external data is included, treat it as factual.
-Keep answers concise and visitor-friendly.
-Do not mention any coordinates or technical details.
-`
-              },
-              {
-                role: "user",
-                content: `
-Place name: ${title}
-
-Description from map database:
-${desc || "No description available."}
-
-Coordinates:
-Latitude: ${lat ?? "Unknown"}
-Longitude: ${lng ?? "Unknown"}
-
-External search results:
-${webResults}
-
-Question:
-${question}
-`
-              }
-            ],
-            max_tokens: 150
-          })
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.error) {
-        console.warn(`Model failed: ${model}`, data.error.message);
-        continue; // try next model
-      }
-
-      const content = data.choices?.[0]?.message?.content;
-      if (content && content.trim()) return content;
-
-      console.warn(`Empty response from model: ${model}`);
-      continue;
-    } catch (err) {
-      console.warn(`Request failed for model: ${model}`, err);
-    }
-  }
-  return "⚠️ AI is temporarily unavailable due to free model limits. Please try again in a moment.";
-}
-
-//js hook to wire AI Assistant button
-const aiAskBtn = document.getElementById("aiAskBtn");
-const aiAnswerEl = document.getElementById("aiAnswer");
-const aiQuestionEl = document.getElementById("aiQuestion");
-
-if (aiAskBtn) {
-  aiAskBtn.addEventListener("click", async () => {
-    const q = aiQuestionEl.value.trim();
-    if (!q) return;
-
-    // dot animation when generating response
-    let dots = 0;
-    aiAnswerEl.textContent = "🤖 Thinking";
-    const interval = setInterval(() => {
-      aiAnswerEl.textContent = "🤖 Thinking" + ".".repeat(dots % 4);
-      dots++;
-    }, 500);
-
-    try {
-      const answer = await askAIDestination(q);
-      clearInterval(interval);
-      aiAnswerEl.textContent = answer;
-    } catch (err) {
-      clearInterval(interval);
-      aiAnswerEl.textContent = "⚠️ Failed to get response.";
-      console.error(err);
-    }
-  });
-
-  // Optional: submit on Enter key
-  aiQuestionEl.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") aiAskBtn.click();
-  });
-}

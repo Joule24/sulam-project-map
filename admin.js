@@ -1,31 +1,20 @@
 // admin.js — complete file with requested fixes applied
 
 // ---------------- FIREBASE SETUP ----------------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { firebaseInitializer, app, db } from "./helper/initializeFirebase.js";
 
 import {
-  getFirestore,
   collection,
   doc,
   getDocs,
-  setDoc,
   updateDoc,
   deleteDoc,
   addDoc
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyA093rrUBlUG4tDnGUdyql0-c7m-E2DDHw",
-  authDomain: "sulam-project-map.firebaseapp.com",
-  projectId: "sulam-project-map",
-  storageBucket: "sulam-project-map.firebasestorage.app",
-  messagingSenderId: "402597128748",
-  appId: "1:402597128748:web:f73f4b44e44fcb55bfff89",
-  measurementId: "G-SDHPJ5G431"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+
+firebaseInitializer();
 const auth = getAuth(app);
 
 // ---------------- UI REFERENCES ----------------
@@ -36,14 +25,12 @@ const existingSelect = document.getElementById('existingSelect');
 const formContainer = document.getElementById('formContainer');
 const titleInput = document.getElementById('titleInput');
 const descInput = document.getElementById('descInput');
-// const imgFileInput = document.getElementById('poiImage');
-// const previewImage = document.getElementById('previewImage');
-const nowImageInput = document.getElementById('nowImageInput');
-const thenImageInput = document.getElementById('thenImageInput');
-const nowPreview = document.getElementById('nowPreview');
-const thenPreview = document.getElementById('thenPreview');
+const imgFileInput = document.getElementById('poiImage');
+const previewImage = document.getElementById('previewImage');
 const xInput = document.getElementById('xInput');
 const yInput = document.getElementById('yInput');
+const realWorldLatInput = document.getElementById('realWorldLatInput');
+const realWorldLngInput = document.getElementById('realWorldLngInput');
 const coordsListEl = document.getElementById('coords-list');
 const logoutBtn = document.getElementById('logoutBtn');
 
@@ -55,7 +42,7 @@ const cancelGlobalBtn = document.getElementById('cancelGlobalBtn');
 const statusMsg = document.getElementById('statusMsg');
 
 // ---------------- MAP ----------------
-const IMAGE_FILENAME = "bwm_map3.jpg";
+const IMAGE_FILENAME = "assets/bwm_map3.jpg";
 const IMG_W = 1530;
 const IMG_H = 1050;
 const bounds = [[0, 0], [IMG_H, IMG_W]];
@@ -65,9 +52,7 @@ let currentPolygon = null;
 let polygonCoords = [];
 
 // store preview dataURL (if any)
-// let previewDataURL = "";
-let nowImageDataURL = "";
-let thenImageDataURL = "";
+let previewDataURL = "";
 
 // ---------------- SHARED CLICK HANDLER ----------------
 function polygonClickHandler(e) {
@@ -145,16 +130,13 @@ async function loadExisting(type) {
 
 // ---------------- HELPERS ----------------
 function setFormEnabled(enabled) {
-  // text + coords only
-  [titleInput, descInput, xInput, yInput].forEach(el => {
+  // enabled = true -> allow editing; false -> disable inputs (used for "remove")
+  [titleInput, descInput, imgFileInput, xInput, yInput, realWorldLatInput, realWorldLngInput].forEach(el => {
     el.disabled = !enabled;
     el.classList.toggle('muted', !enabled);
   });
 
-  // image inputs only disabled, previews always visible
-  nowImageInput.disabled = !enabled;
-  thenImageInput.disabled = !enabled;
-
+  // toggle map click handling for polygon/poi editing
   if (!enabled) {
     map.off('click', polygonClickHandler);
   } else {
@@ -170,11 +152,15 @@ function updateResetBtnVisibility() {
 }
 
 // ---------------- EVENT LISTENERS ----------------
-actionSelect.addEventListener('change', () => {
-  resetForm();
+const container = function () {
   existingContainer.classList.add('hidden');
   formContainer.classList.add('hidden');
   confirmArea.classList.add('hidden');
+};
+
+actionSelect.addEventListener('change', () => {
+  resetForm();
+  container();
   polygonCoords = [];
 
   if (actionSelect.value === 'add') {
@@ -184,17 +170,21 @@ actionSelect.addEventListener('change', () => {
     setFormEnabled(true);
   } else if (actionSelect.value === 'edit') {
     // Edit: show existing picker + form + confirm
-    existingContainer.classList.remove('hidden');
-    formContainer.classList.remove('hidden');
-    confirmArea.classList.remove('hidden');
-    if (typeSelect.value) loadExisting(typeSelect.value);
+    if (typeSelect.value) {
+      existingContainer.classList.remove('hidden');
+      formContainer.classList.remove('hidden');
+      confirmArea.classList.remove('hidden');
+      loadExisting(typeSelect.value);
+    }
     setFormEnabled(true);
   } else if (actionSelect.value === 'remove') {
-    // Remove: show existing picker + confirm, disable editing
-    existingContainer.classList.remove('hidden');
-    formContainer.classList.remove('hidden'); // show preview/info
-    confirmArea.classList.remove('hidden');
-    if (typeSelect.value) loadExisting(typeSelect.value);
+    // Remove: show existing picker + form (read-only) + confirm
+    if (typeSelect.value) {
+      existingContainer.classList.remove('hidden');
+      formContainer.classList.remove('hidden');
+      confirmArea.classList.remove('hidden');
+      loadExisting(typeSelect.value);
+    }
     setFormEnabled(false);
   }
 
@@ -203,8 +193,11 @@ actionSelect.addEventListener('change', () => {
 
 typeSelect.addEventListener('change', async () => {
   polygonCoords = [];
-  // when type changes and action is edit/remove, reload existing
+  // when type changes and action is edit/remove, reload existing and show form
   if (actionSelect.value === 'edit' || actionSelect.value === 'remove') {
+    existingContainer.classList.remove('hidden');
+    formContainer.classList.remove('hidden');
+    confirmArea.classList.remove('hidden');
     await loadExisting(typeSelect.value);
   }
   // show/hide coords section depending on type
@@ -213,8 +206,16 @@ typeSelect.addEventListener('change', async () => {
 });
 
 existingSelect.addEventListener('change', async () => {
-  if (!existingSelect.value) return;
+  if (!existingSelect.value) {
+    // Clear form when no item selected
+    resetForm();
+    return;
+  }
   if (actionSelect.value === 'edit' || actionSelect.value === 'remove') {
+    // Ensure form container is visible when item is selected
+    formContainer.classList.remove('hidden');
+    confirmArea.classList.remove('hidden');
+
     const colRef = collection(db, typeSelect.value === 'poi' ? 'pois' : 'zones');
     const snap = await getDocs(colRef);
     const dataDoc = snap.docs.find(d => d.id === existingSelect.value);
@@ -223,31 +224,12 @@ existingSelect.addEventListener('change', async () => {
 
     titleInput.value = data.title || '';
     descInput.value = data.desc || '';
-    // previewDataURL = data.img || '';
-    // if (previewDataURL) {
-    //   previewImage.src = previewDataURL;
-    //   previewImage.style.display = 'block';
-    // } else {
-    //   previewImage.style.display = 'none';
-    // }
-
-    // Reset
-    nowImageDataURL = '';
-    thenImageDataURL = '';
-
-    // Load images
-    if (data.images?.now?.url) {
-      nowPreview.src = data.images.now.url;
-      nowPreview.style.display = 'block';
+    previewDataURL = data.img || '';
+    if (previewDataURL) {
+      previewImage.src = previewDataURL;
+      previewImage.style.display = 'block';
     } else {
-      nowPreview.style.display = 'none';
-    }
-
-    if (data.images?.then?.url) {
-      thenPreview.src = data.images.then.url;
-      thenPreview.style.display = 'block';
-    } else {
-      thenPreview.style.display = 'none';
+      previewImage.style.display = 'none';
     }
 
     if (typeSelect.value === 'poi') {
@@ -255,14 +237,22 @@ existingSelect.addEventListener('change', async () => {
       const lng = data.coords?.y;
       xInput.value = lat ?? '';
       yInput.value = lng ?? '';
+
+      // Load real-world coordinates
+      realWorldLatInput.value = data.realWorldCoords?.lat ?? '';
+      realWorldLngInput.value = data.realWorldCoords?.lng ?? '';
+
       if (currentMarker) { try { map.removeLayer(currentMarker); } catch (e) { } currentMarker = null; }
       if (!isNaN(Number(lat)) && !isNaN(Number(lng))) {
-        currentMarker = L.marker([Number(lat), Number(lng)], { draggable: true }).addTo(map)
-          .on('drag', ev => {
+        const draggable = actionSelect.value === 'edit';
+        currentMarker = L.marker([Number(lat), Number(lng)], { draggable: draggable }).addTo(map);
+        if (draggable) {
+          currentMarker.on('drag', ev => {
             const pos = ev.target.getLatLng();
             xInput.value = Math.round(pos.lat);
             yInput.value = Math.round(pos.lng);
           });
+        }
         map.setView([Number(lat), Number(lng)], Math.max(map.getZoom(), map.getMinZoom()));
       }
       coordsListEl.classList.add('hidden');
@@ -270,7 +260,7 @@ existingSelect.addEventListener('change', async () => {
       polygonCoords = (data.coordinates || []).map(c => [c.x, c.y]);
       updatePolygon();
     }
-    // If remove action, keep form disabled
+    // If remove action, keep form disabled (read-only view)
     setFormEnabled(actionSelect.value !== 'remove');
   }
 });
@@ -292,31 +282,27 @@ if (resetCoordsBtn) {
 }
 
 // ---------------- FILE INPUT PREVIEW + COMPRESSION ----------------
-nowImageInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) {
-    nowPreview.style.display = 'none';
-    nowImageDataURL = '';
-    return;
-  }
+if (imgFileInput) {
+  imgFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      previewImage.style.display = 'none';
+      previewDataURL = '';
+      return;
+    }
 
-  nowImageDataURL = await compressImage(file, 1024, 0.7);
-  nowPreview.src = nowImageDataURL;
-  nowPreview.style.display = 'block';
-});
-
-thenImageInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) {
-    thenPreview.style.display = 'none';
-    thenImageDataURL = '';
-    return;
-  }
-
-  thenImageDataURL = await compressImage(file, 1024, 0.7);
-  thenPreview.src = thenImageDataURL;
-  thenPreview.style.display = 'block';
-});
+    try {
+      previewDataURL = await compressImage(file, 1024, 0.7); // resize + compress
+      previewImage.src = previewDataURL;
+      previewImage.style.display = 'block';
+    } catch (err) {
+      console.error("Image processing error:", err);
+      alert("Failed to process image. Try a smaller file.");
+      previewImage.style.display = 'none';
+      previewDataURL = '';
+    }
+  });
+}
 
 // ---------------- HELPER FUNCTION: COMPRESS IMAGE ----------------
 function compressImage(file, maxSize = 1024, quality = 0.7) {
@@ -380,26 +366,22 @@ if (confirmGlobalBtn) {
 
     try {
       if (actionSelect.value === 'add') {
-        if (!nowImageDataURL) {
-          return alert("NOW image is required.");
-        }
-
         const data = {
           title: titleInput.value,
           desc: descInput.value,
-          images: {
-            now: {
-              url: nowImageDataURL,
-              label: "Now"
-            },
-            then: thenImageDataURL
-              ? { url: thenImageDataURL, label: "Then" }
-              : null
-          },
-          thumb: nowImageDataURL
+          img: previewDataURL || ''
         };
-
-        if (typeSelect.value === 'poi') data.coords = { x: Number(xInput.value || 0), y: Number(yInput.value || 0) };
+        if (typeSelect.value === 'poi') {
+          data.coords = { x: Number(xInput.value || 0), y: Number(yInput.value || 0) };
+          const realLat = realWorldLatInput.value.trim();
+          const realLng = realWorldLngInput.value.trim();
+          if (realLat || realLng) {
+            data.realWorldCoords = {
+              lat: realLat ? Number(realLat) : null,
+              lng: realLng ? Number(realLng) : null
+            };
+          }
+        }
         if (typeSelect.value === 'zone') data.coordinates = polygonCoords.map(c => ({ x: c[0], y: c[1] }));
         if (!confirm('Confirm adding new item?')) return;
         const newDocRef = await addDoc(colRef, data);
@@ -407,40 +389,28 @@ if (confirmGlobalBtn) {
       } else if (actionSelect.value === 'edit') {
         if (!existingSelect.value) return alert('Pick an existing item to edit.');
         const docRef = doc(db, colName, existingSelect.value);
-
-        const updateData = {
+        const data = {
           title: titleInput.value,
-          desc: descInput.value
+          desc: descInput.value,
+          img: previewDataURL || ''
         };
-
-        // NOW image — overwrite if new upload
-        if (nowImageDataURL) {
-          updateData["images.now"] = {
-            url: nowImageDataURL,
-            label: "Now"
-          };
-          updateData.thumb = nowImageDataURL;
-        }
-
-        // THEN image — overwrite if new upload
-        if (thenImageDataURL) {
-          updateData["images.then"] = {
-            url: thenImageDataURL,
-            label: "Then"
-          };
-        }
-
-        // coords
         if (typeSelect.value === 'poi') {
-          updateData.coords = { x: Number(xInput.value || 0), y: Number(yInput.value || 0) };
+          data.coords = { x: Number(xInput.value || 0), y: Number(yInput.value || 0) };
+          const realLat = realWorldLatInput.value.trim();
+          const realLng = realWorldLngInput.value.trim();
+          if (realLat || realLng) {
+            data.realWorldCoords = {
+              lat: realLat ? Number(realLat) : null,
+              lng: realLng ? Number(realLng) : null
+            };
+          } else {
+            // If fields are empty, remove realWorldCoords
+            data.realWorldCoords = null;
+          }
         }
-
-        if (typeSelect.value === 'zone') {
-          updateData.coordinates = polygonCoords.map(c => ({ x: c[0], y: c[1] }));
-        }
-
+        if (typeSelect.value === 'zone') data.coordinates = polygonCoords.map(c => ({ x: c[0], y: c[1] }));
         if (!confirm('Confirm updating item?')) return;
-        await updateDoc(docRef, updateData);
+        await updateDoc(docRef, data);
         statusMsg.textContent = 'Item updated successfully!';
       } else if (actionSelect.value === 'remove') {
         if (!existingSelect.value) return alert('Pick an existing item to remove.');
@@ -465,9 +435,7 @@ if (cancelGlobalBtn) {
   cancelGlobalBtn.addEventListener('click', () => {
     resetForm();
     existingSelect.innerHTML = '';
-    existingContainer.classList.add('hidden');
-    formContainer.classList.add('hidden');
-    confirmArea.classList.add('hidden');
+    container();
   });
 }
 
@@ -488,15 +456,15 @@ logoutBtn.addEventListener('click', async () => {
 function resetForm() {
   titleInput.value = '';
   descInput.value = '';
-  nowImageInput.value = '';
-  thenImageInput.value = '';
-  nowPreview.style.display = 'none';
-  thenPreview.style.display = 'none';
-  nowImageDataURL = '';
-  thenImageDataURL = '';
+  imgFileInput.value = '';
+  previewImage.src = '';
+  previewImage.style.display = 'none';
+  previewDataURL = '';
 
   xInput.value = '';
   yInput.value = '';
+  realWorldLatInput.value = '';
+  realWorldLngInput.value = '';
   polygonCoords = [];
   if (currentMarker) { try { map.removeLayer(currentMarker); } catch (e) { } currentMarker = null; }
   if (currentPolygon) { try { map.removeLayer(currentPolygon); } catch (e) { } currentPolygon = null; }

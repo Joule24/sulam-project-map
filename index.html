@@ -52,14 +52,16 @@
         <input id="poiSearch" type="search" placeholder="Search POIs or Zones..." aria-label="Search POIs" />
       </div>
 
-      <div class="sidebar-section">
-        <h4>Points of Interest</h4>
-        <ul id="markerList" class="list"></ul>
-      </div>
+      <div class="sidebar-content">
+        <div class="sidebar-section">
+          <h4>Points of Interest</h4>
+          <ul id="markerList" class="list"></ul>
+        </div>
 
-      <div class="sidebar-section">
-        <h4>Zones</h4>
-        <ul id="zoneList" class="list"></ul>
+        <div class="sidebar-section">
+          <h4>Zones</h4>
+          <ul id="zoneList" class="list"></ul>
+        </div>
       </div>
 
       <div class="sidebar-footer">
@@ -70,11 +72,7 @@
 
     <!-- Header above map -->
     <div id="mapHeader" class="map-header">
-      <div class="header-left">
-        <img src="BWM logo.png" alt="BWM Logo" class="header-logo" />
-        <h2>KUL City Walk — Area 1</h2>
-      </div>
-
+      <h2>KUL City Walk — Area 1</h2>
       <div class="header-controls">
         <button class="btn small" id="adminBtn">ADMIN</button>
         <button id="toggleSidebarBtn" class="btn small" aria-label="Toggle sidebar">Menu</button>
@@ -93,10 +91,6 @@
 
       <!-- Floating list button for mobile -->
       <button id="openListBtn" class="fab" aria-label="Open POI list">List</button>
-
-      <button id="infoBtn" class="info-btn" aria-label="Map information">
-        ℹ️
-      </button>
     </main>
 
     <!-- Footer below map -->
@@ -112,15 +106,7 @@
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <button id="closeModal" class="close" aria-label="Close">&times;</button>
       <h2 id="modalTitle"></h2>
-      <div class="modal-image-wrapper">
-        <div class="image-label" id="imageLabel">NOW</div>
-        <img id="modalImage" src="" alt="">
-      </div>
-
-      <div class="image-toggle">
-        <button id="showNowBtn" class="btn small active">NOW</button>
-        <button id="showThenBtn" class="btn small">THEN</button>
-      </div>
+      <img id="modalImage" src="" alt="">
       <p id="modalDesc"></p>
 
       <!-- AI Assistant -->

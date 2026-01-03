@@ -109,24 +109,18 @@
       <label for="descInput">Description</label>
       <textarea id="descInput"></textarea>
 
-      <label>NOW Image (Required)</label>
-      <input type="file" id="nowImageInput" accept="image/*">
-      <img id="nowPreview" style="max-width:200px; display:none; margin-bottom:8px;">
-
-      <label>THEN Image (Optional)</label>
-      <input type="file" id="thenImageInput" accept="image/*">
-      <img id="thenPreview" style="max-width:200px; display:none; margin-bottom:8px;">
-
-      <!-- <label>
-        <input type="checkbox" id="removeThenCheckbox">
-        Remove existing THEN image
-      </label> -->
+      <label for="poiImage">Upload Image</label>
+      <input type="file" id="poiImage" accept="image/*">
+      <img id="previewImage" src="" alt="Preview" style="max-width:200px; display:none; margin-bottom:8px;">
 
       <div id="coordsInputs">
         <label>Coordinates</label>
         <input type="text" id="xInput" placeholder="x (pixel) — latitude-like">
         <input type="text" id="yInput" placeholder="y (pixel) — longitude-like">
         <div id="coords-list" class="hidden"></div>
+        <label style="margin-top: 10px;">Real-world Coordinates</label>
+        <input type="text" id="realWorldLatInput" placeholder="Latitude (x)">
+        <input type="text" id="realWorldLngInput" placeholder="Longitude (y)">
       </div>
       <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
         <button id="resetCoordsBtn" type="button" style="flex:1;">Reset coords</button>
