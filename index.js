@@ -696,10 +696,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function closeIntro() {
     introPopup.style.display = 'none';
+    sessionStorage.setItem("introSeen", "true");
   }
 
   closeIntroBtn.addEventListener('click', closeIntro);
   gotItBtn.addEventListener('click', closeIntro);
+  // show only once per session
+  if (!sessionStorage.getItem("introSeen")) {
+    introPopup.style.display = "flex";
+  } else {
+    introPopup.style.display = "none";
+  }
 });
 
 const sidebarEl = document.getElementById('sidebar');
