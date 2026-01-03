@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KUL City Walk - Area 1</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="style.css" />
+
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- Map Welcome Popup -->
+    <div id="mapIntroPopup" class="popup-overlay" aria-hidden="false">
+      <div class="popup-content">
+        <button id="closeIntroPopup" class="popup-close" aria-label="Close">&times;</button>
+        <h2 class="popup-title">Welcome to KUL City Walk</h2>
+        <div class="popup-slogan">Discover stories behind every street</div>
+
+        <ul class="intro-features">
+          <li>📍 Explore Points of Interest & Zones</li>
+          <li>🗺️ Tap markers to view place details</li>
+          <li>🤖 Ask our AI assistant about selected locations</li>
+          <li>🔍 Use search to find destinations quickly</li>
+          <li>📋 Copy map links to share with friends</li>
+        </ul>
+
+        <button id="gotItBtn" class="popup-gotit">Got it</button>
+
+        <div class="popup-credit">
+          Powered by Universiti Malaya students &amp; BWM
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR (overlay) -->
+    <aside id="sidebar" class="sidebar" aria-hidden="false">
+      <div class="sidebar-header">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;width:100%;">
+          <h3 style="margin:0; font-size:16px;">KUL City Walk — Area 1</h3>
+          <button id="closeSidebarBtn" class="close-sidebar" aria-label="Close sidebar">&times;</button>
+        </div>
+        <input id="poiSearch" type="search" placeholder="Search POIs or Zones..." aria-label="Search POIs" />
+      </div>
+
+      <div class="sidebar-section">
+        <h4>Points of Interest</h4>
+        <ul id="markerList" class="list"></ul>
+      </div>
+
+      <div class="sidebar-section">
+        <h4>Zones</h4>
+        <ul id="zoneList" class="list"></ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <button id="fitAllBtn" class="btn">Overview</button>
+        <button id="copyMapLink" class="btn">Copy map link</button>
+      </div>
+    </aside>
+
+    <!-- Header above map -->
+    <div id="mapHeader" class="map-header">
+      <div class="header-left">
+        <img src="BWM logo.png" alt="BWM Logo" class="header-logo" />
+        <h2>KUL City Walk — Area 1</h2>
+      </div>
+
+      <div class="header-controls">
+        <button class="btn small" id="adminBtn">ADMIN</button>
+        <button id="toggleSidebarBtn" class="btn small" aria-label="Toggle sidebar">Menu</button>
+        <button id="fitAllBtnTop" class="btn small">Overview</button>
+      </div>
+    </div>
+
+    <!-- Map area -->
+    <main class="map-area">
+
+      <!-- Desktop map -->
+      <div id="map-desktop" class="map-container" aria-hidden="true"></div>
+
+      <!-- Mobile map -->
+      <div id="map-mobile" class="map-container" aria-hidden="true"></div>
+
+      <!-- Floating list button for mobile -->
+      <button id="openListBtn" class="fab" aria-label="Open POI list">List</button>
+
+      <button id="infoBtn" class="info-btn" aria-label="Map information">
+        ℹ️
+      </button>
+    </main>
+
+    <!-- Footer below map -->
+    <div id="mapFooter" class="map-footer">
+      <span id="selectedInfo">Select a POI or Zone to see details</span>
+      <span class="footer-credits">© 2025 KUL City Walk Map</span>
+    </div>
+
+  </div>
+
+  <!-- Shared modal -->
+  <div id="poiModal" class="modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button id="closeModal" class="close" aria-label="Close">&times;</button>
+      <h2 id="modalTitle"></h2>
+      <div class="modal-image-wrapper">
+        <div class="image-label" id="imageLabel">NOW</div>
+        <img id="modalImage" src="" alt="">
+      </div>
+
+      <div class="image-toggle">
+        <button id="showNowBtn" class="btn small active">NOW</button>
+        <button id="showThenBtn" class="btn small">THEN</button>
+      </div>
+      <p id="modalDesc"></p>
+
+      <!-- AI Assistant -->
+      <div class="ai-box">
+        <div class="ai-input-wrapper">
+          <input id="aiQuestion" type="text" placeholder="Ask about this place..." aria-label=" Ask AI" />
+          <button id="aiAskBtn" class="btn small ai-btn" aria-label="Ask AI">
+            <!-- Inline chat icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M2 2c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2v12l-4-4H4c-1.1 0-2-.9-2-2V2z" />
+            </svg>
+            <span class="ai-btn-label">Ask AI</span>
+          </button>
+        </div>
+        <div id="aiAnswer" class="ai-answer"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="modalShare" class="btn">Copy link</button>
+        <button id="modalDirections" class="btn">Directions</button>
+      </div>
+      <div id="recommendationBox" class="recommendations hidden">
+        <div class="rec-title">Recommendations</div>
+        <ul id="recommendationList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <script type="module" src="index.js"></script>
+</body>
+
+
+</html>
