@@ -707,6 +707,9 @@ window.addEventListener('DOMContentLoaded', () => {
   } else {
     introPopup.style.display = "none";
   }
+  document.getElementById("infoBtn").addEventListener("click", () => {
+    document.getElementById("mapIntroPopup").style.display = "flex";
+  });
 });
 
 const sidebarEl = document.getElementById('sidebar');

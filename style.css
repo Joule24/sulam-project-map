@@ -325,6 +325,28 @@ body {
 /* hide mobile list button by default; shown only on narrow screens */
 #openListBtn { display: none; }
 
+.info-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2400;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #ffffff;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  transition: transform 0.15s, background-color 0.2s;
+}
+
+.info-btn:hover {
+  background: #3b82f6;
+  transform: scale(1.05);
+}
+
 /* small desktop toggle (hidden on small screens) */
 #toggleSidebarBtn {
   display: inline-block;
@@ -336,7 +358,6 @@ body {
   #openListBtn { display: block; }
   #toggleSidebarBtn { display: none; } /* hide desktop toggle on mobile */
 }
-
 
 /* Header above map */
 .map-header {
