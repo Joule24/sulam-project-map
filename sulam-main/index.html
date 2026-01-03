@@ -18,7 +18,7 @@
 
 <body>
   <div class="app">
-    
+
     <!-- Map Welcome Popup -->
     <div id="mapIntroPopup" class="popup-overlay" aria-hidden="false">
       <div class="popup-content">
@@ -52,14 +52,16 @@
         <input id="poiSearch" type="search" placeholder="Search POIs or Zones..." aria-label="Search POIs" />
       </div>
 
-      <div class="sidebar-section">
-        <h4>Points of Interest</h4>
-        <ul id="markerList" class="list"></ul>
-      </div>
+      <div class="sidebar-content">
+        <div class="sidebar-section">
+          <h4>Points of Interest</h4>
+          <ul id="markerList" class="list"></ul>
+        </div>
 
-      <div class="sidebar-section">
-        <h4>Zones</h4>
-        <ul id="zoneList" class="list"></ul>
+        <div class="sidebar-section">
+          <h4>Zones</h4>
+          <ul id="zoneList" class="list"></ul>
+        </div>
       </div>
 
       <div class="sidebar-footer">
@@ -113,9 +115,9 @@
           <input id="aiQuestion" type="text" placeholder="Ask about this place..." aria-label=" Ask AI" />
           <button id="aiAskBtn" class="btn small ai-btn" aria-label="Ask AI">
             <!-- Inline chat icon -->
-             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M2 2c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2v12l-4-4H4c-1.1 0-2-.9-2-2V2z"/>
-             </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M2 2c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2v12l-4-4H4c-1.1 0-2-.9-2-2V2z" />
+            </svg>
             <span class="ai-btn-label">Ask AI</span>
           </button>
         </div>
