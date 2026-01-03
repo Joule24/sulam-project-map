@@ -383,6 +383,18 @@ body {
   font-weight: 600;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-logo {
+  height: 28px;
+  width: auto;
+  border-radius: 4px;
+}
+
 /* Footer below map */
 .map-footer {
   position: absolute;
