@@ -72,7 +72,11 @@
 
     <!-- Header above map -->
     <div id="mapHeader" class="map-header">
-      <h2>KUL City Walk — Area 1</h2>
+      <div class="header-left">
+        <img src="BWM logo.png" alt="BWM Logo" class="header-logo" />
+        <h2>KUL City Walk — Area 1</h2>
+      </div>
+
       <div class="header-controls">
         <button class="btn small" id="adminBtn">ADMIN</button>
         <button id="toggleSidebarBtn" class="btn small" aria-label="Toggle sidebar">Menu</button>
@@ -91,6 +95,10 @@
 
       <!-- Floating list button for mobile -->
       <button id="openListBtn" class="fab" aria-label="Open POI list">List</button>
+
+      <button id="infoBtn" class="info-btn" aria-label="Map information">
+        ℹ️
+      </button>
     </main>
 
     <!-- Footer below map -->
@@ -106,7 +114,15 @@
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <button id="closeModal" class="close" aria-label="Close">&times;</button>
       <h2 id="modalTitle"></h2>
-      <img id="modalImage" src="" alt="">
+      <div class="modal-image-wrapper">
+        <div class="image-label" id="imageLabel">NOW</div>
+        <img id="modalImage" src="" alt="">
+      </div>
+
+      <div class="image-toggle">
+        <button id="showNowBtn" class="btn small active">NOW</button>
+        <button id="showThenBtn" class="btn small">THEN</button>
+      </div>
       <p id="modalDesc"></p>
 
       <!-- AI Assistant -->

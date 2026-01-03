@@ -26,6 +26,9 @@ const modalShareBtn = document.getElementById('modalShare');
 const modalDirectionsBtn = document.getElementById('modalDirections');
 const selectedInfoEl = document.getElementById('selectedInfo');
 const poiSearchEl = document.getElementById('poiSearch');
+const imageLabelEl = document.getElementById('imageLabel');
+const showNowBtn = document.getElementById('showNowBtn');
+const showThenBtn = document.getElementById('showThenBtn');
 
 // ---------------- RECOMMENDATION UI ----------------
 const recommendationBox = document.getElementById('recommendationBox');
@@ -145,8 +148,37 @@ export const showModal = function showModal(data) {
 
   // Update modal content
   modalTitle.textContent = data.title || '';
-  modalImage.src = data.img || 'placeholder.jpg';
-  modalImage.alt = data.title || 'POI image';
+  const images = normalizeImages(data);
+
+  // Default to NOW
+  if (images.now) {
+    modalImage.src = images.now.url;
+    imageLabelEl.textContent = images.now.label || 'NOW';
+  } else {
+    modalImage.src = 'placeholder.jpg';
+    imageLabelEl.textContent = '';
+  }
+
+  // Button states
+  showNowBtn.classList.add('active');
+  showThenBtn.classList.remove('active');
+
+  // Toggle handlers
+  showNowBtn.onclick = () => {
+    if (!images.now) return;
+    modalImage.src = images.now.url;
+    imageLabelEl.textContent = images.now.label || 'NOW';
+    showNowBtn.classList.add('active');
+    showThenBtn.classList.remove('active');
+  };
+
+  showThenBtn.onclick = () => {
+    if (!images.then) return;
+    modalImage.src = images.then.url;
+    imageLabelEl.textContent = images.then.label || 'THEN';
+    showThenBtn.classList.add('active');
+    showNowBtn.classList.remove('active');
+  };
   modalDesc.textContent = data.desc || '';
   poiModal.setAttribute('aria-hidden', 'false');
   poiModal._current = { ...data, coords, realWorldCoords: data.realWorldCoords };
@@ -209,6 +241,39 @@ modalDirectionsBtn.addEventListener('click', () => {
   window.open(googleMapsUrl, '_blank');
 });
 
+function normalizeImages(data) {
+  // New structure
+  if (data.images?.now || data.images?.then) {
+    return {
+      now: data.images?.now || null,
+      then: data.images?.then || null
+    };
+  }
+
+  // Legacy fallback
+  if (data.img) {
+    return {
+      now: { url: data.img, label: 'Now' },
+      then: null
+    };
+  }
+
+  return { now: null, then: null };
+}
+
+function getThumbnail(data) {
+  // Prefer explicit thumbnail
+  if (data.thumb) return data.thumb;
+
+  // Prefer NOW image if exists
+  if (data.images?.now?.url) return data.images.now.url;
+
+  // Legacy fallback
+  if (data.img) return data.img;
+
+  return 'placeholder.jpg';
+}
+
 // ---------------- MAP INIT ----------------
 function initMaps() {
   // Desktop
@@ -258,7 +323,7 @@ function startListeners() {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        images: d.images || null,
         coords: [lat, lng],
         realWorldCoords: d.realWorldCoords || null
       };
@@ -305,7 +370,7 @@ function startListeners() {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        images: d.images || null,
         coords: [center.lat, center.lng],
         realWorldCoords: d.realWorldCoords || null
       };
@@ -571,10 +636,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function closeIntro() {
     introPopup.style.display = 'none';
+    sessionStorage.setItem("introSeen", "true");
   }
 
   closeIntroBtn.addEventListener('click', closeIntro);
   gotItBtn.addEventListener('click', closeIntro);
+  // show only once per session
+  if (!sessionStorage.getItem("introSeen")) {
+    introPopup.style.display = "flex";
+  } else {
+    introPopup.style.display = "none";
+  }
+  document.getElementById("infoBtn").addEventListener("click", () => {
+    document.getElementById("mapIntroPopup").style.display = "flex";
+  });
 });
 
 const sidebarEl = document.getElementById('sidebar');
@@ -644,4 +719,3 @@ window.addEventListener('resize', () => {
     sidebarEl.classList.remove('open');
   }
 });
-
