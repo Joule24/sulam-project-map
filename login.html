@@ -1,63 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Login</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+
   <script type="module" src="login.js" defer></script>
+
   <style>
     body {
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background: #f5f5f5;
-      font-family: Inter, Arial, sans-serif;
+      margin: 0;
+      /* Background matches your friend's .popup-overlay color */
+      background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
     .login-card {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 32px;
-      border-radius: 12px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-      width: 320px;
+      background: #ffffff;
+      padding: 40px;
+      /* Large rounding to match your reference image */
+      border-radius: 28px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 380px;
       text-align: center;
     }
 
     .login-card h2 {
+      margin-top: 0;
       margin-bottom: 24px;
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: -1px;
+      color: #0f172a;
     }
 
     .login-card input {
       width: 100%;
-      padding: 10px;
+      padding: 14px 18px;
       margin-bottom: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.2s ease;
     }
 
-    .login-card .btn {
+    .login-card input:focus {
+      /* Matches your friend's --accent: #1e6091 */
+      border-color: #1e6091;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(30, 96, 145, 0.1);
+    }
+
+    .login-card .btn-main {
       width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      /* Exact color from your friend's .popup-gotit button */
+      background: rgba(23, 82, 87, 0.85);
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .login-card .btn-main:hover {
+      background: rgba(23, 82, 87, 1);
+      transform: translateY(-1px);
+    }
+
+    /* Arrow link matching your reference image */
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #64748b;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover {
+      color: #0f172a;
+    }
+
+    .switch-text {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .switch-text a {
+      color: #1e6091;
+      font-weight: 600;
+      text-decoration: none;
     }
   </style>
 </head>
 
 <body>
-  <script src="login.js"></script>
   <div class="login-card">
     <h2>Admin Login</h2>
-    <input type="email" id="email" placeholder="Email" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <button id="backToMap" type="button" class="btn secondary2">Back to Map</button>
-    <button id="loginBtn" type="submit" class="btn">Log In</button>
+    
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button id="loginBtn" type="submit" class="btn-main">Log In</button>
+    </form>
+
+    <a href="index.html" id="backToMap" class="back-link">← Back to Map</a>
+    
     <p class="switch-text">
-      Don’t have an account?
+      Don’t have an account? 
       <a href="register.html">Sign Up</a>
     </p>
   </div>
-  <script src="login.js" defer></script>
 </body>
-
 </html>

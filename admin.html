@@ -1,85 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel</title>
+  
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  
   <style>
+    :root {
+      --navy-bg: #0f172a;
+      --teal-accent: rgba(23, 82, 87, 0.85);
+      --sidebar-glass: rgba(179, 227, 224, 0.95);
+      --input-bg: #f8fafc;
+      --text-main: #0f172a;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       margin: 0;
-      padding: 0;
       display: flex;
-    }
-
-    #sidebar {
-      width: 320px;
-      padding: 20px;
-      border-right: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-
-    #map {
-      flex: 1;
+      background: #f1f5f9;
+      color: var(--text-main);
       height: 100vh;
+      overflow: hidden; 
     }
 
-    input,
-    select,
-    button,
-    textarea {
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 6px;
+    /* DESKTOP SIDEBAR */
+    #sidebar {
+      width: 360px;
+      height: 100vh;
+      background: var(--sidebar-glass);
+      backdrop-filter: blur(10px);
+      padding: 24px;
+      border-right: 1px solid rgba(0,0,0,0.1);
       box-sizing: border-box;
-    }
-
-    #coords-list {
-      height: 100px;
-      overflow-y: auto;
-      border: 1px solid #ddd;
-      padding: 4px;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .muted {
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    #confirmArea {
       display: flex;
-      gap: 8px;
-      margin-top: 8px;
+      flex-direction: column;
+      overflow-y: auto;
+      box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+      z-index: 1000;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    #confirmArea button {
-      flex: 1;
-      padding: 8px;
+    /* MOBILE RESPONSIVE LOGIC */
+    @media (max-width: 768px) {
+      #sidebar {
+        position: absolute;
+        width: 260px; /* Reduced width for better map visibility on mobile */
+        max-width: 70%;
+        left: 0;
+        top: 0;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.3);
+      }
+
+      #sidebar.closed {
+        transform: translateX(-100%);
+      }
     }
 
-    #statusMsg {
-      margin-top: 8px;
-      font-size: 13px;
-      color: #111;
-      min-height: 18px;
+    #menuToggle {
+      display: none;
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      z-index: 1100;
+      width: 45px;
+      height: 45px;
+      border-radius: 10px;
+      background: var(--teal-accent);
+      color: white;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+      #menuToggle { display: flex; }
+    }
+
+    h2 {
+      margin: 0 0 24px 0;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--navy-bg);
+      text-align: center;
     }
 
     label {
       font-weight: 600;
-      font-size: 13px;
-      margin-bottom: 4px;
+      font-size: 11px;
+      margin-bottom: 6px;
       display: block;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      box-sizing: border-box;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.1);
+      background: var(--input-bg);
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: var(--teal-accent);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 10px;
+    }
+
+    button:hover { background: rgba(23, 82, 87, 1); transform: translateY(-1px); }
+    #cancelGlobalBtn, #resetCoordsBtn { background: #cbd5e1; color: #475569; }
+    #logoutBtn { background: #ef4444; margin-top: auto; padding: 14px; }
+
+    #map {
+      flex: 1;
+      height: 100vh;
+      background: #a1a1a1;
+      z-index: 1;
+    }
+
+    .preview-img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 2px solid white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .hidden { display: none !important; }
+    #coords-list { height: 100px; overflow-y: auto; background: white; padding: 8px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; }
+  
+    /* Offset zoom controls to prevent overlap with the toggle button */
+    .leaflet-top.leaflet-left {
+        margin-top: 70px !important;
     }
   </style>
 </head>
 
 <body>
-  <div id="sidebar">
+  <button id="menuToggle">☰</button>
+
+  <div id="sidebar" class="closed"> 
     <h2>Admin Panel</h2>
 
     <label for="actionSelect">Action</label>
@@ -93,8 +173,8 @@
     <label for="typeSelect">Content Type</label>
     <select id="typeSelect">
       <option value="">-- Select --</option>
-      <option value="poi">POI</option>
-      <option value="zone">Zone</option>
+      <option value="poi">POI (Marker)</option>
+      <option value="zone">Zone (Area)</option>
     </select>
 
     <div id="existingContainer" class="hidden">
@@ -104,45 +184,41 @@
 
     <div id="formContainer" class="hidden">
       <label for="titleInput">Title</label>
-      <input type="text" id="titleInput">
+      <input type="text" id="titleInput" placeholder="Enter title...">
 
       <label for="descInput">Description</label>
-      <textarea id="descInput"></textarea>
+      <textarea id="descInput" rows="3" placeholder="Enter description..."></textarea>
 
       <label>NOW Image (Required)</label>
       <input type="file" id="nowImageInput" accept="image/*">
-      <img id="nowPreview" style="max-width:200px; display:none; margin-bottom:8px;">
+      <img id="nowPreview" class="preview-img" style="display:none;">
 
       <label>THEN Image (Optional)</label>
       <input type="file" id="thenImageInput" accept="image/*">
-      <img id="thenPreview" style="max-width:200px; display:none; margin-bottom:8px;">
-
-      <!-- <label>
-        <input type="checkbox" id="removeThenCheckbox">
-        Remove existing THEN image
-      </label> -->
+      <img id="thenPreview" class="preview-img" style="display:none;">
 
       <div id="coordsInputs">
-        <label>Coordinates</label>
-        <input type="text" id="xInput" placeholder="x (pixel) — latitude-like">
-        <input type="text" id="yInput" placeholder="y (pixel) — longitude-like">
+        <label>Pixel Coordinates</label>
+        <div style="display:flex; gap:8px;">
+           <input type="text" id="xInput" placeholder="X">
+           <input type="text" id="yInput" placeholder="Y">
+        </div>
         <div id="coords-list" class="hidden"></div>
+        
         <label style="margin-top: 10px;">Real-world Coordinates</label>
-        <input type="text" id="realWorldLatInput" placeholder="Latitude (x)">
-        <input type="text" id="realWorldLngInput" placeholder="Longitude (y)">
+        <input type="text" id="realWorldLatInput" placeholder="Latitude">
+        <input type="text" id="realWorldLngInput" placeholder="Longitude">
       </div>
-      <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
-        <button id="resetCoordsBtn" type="button" style="flex:1;">Reset coords</button>
-      </div>
+      
+      <button id="resetCoordsBtn" type="button">Reset Coords</button>
     </div>
 
-    <!-- GLOBAL confirm/cancel area (always outside form) -->
     <div id="confirmArea" class="hidden">
-      <button id="confirmGlobalBtn">Confirm</button>
+      <button id="confirmGlobalBtn">Confirm Changes</button>
       <button id="cancelGlobalBtn" type="button">Cancel</button>
     </div>
 
-    <div id="statusMsg"></div>
+    <div id="statusMsg" style="margin-top: 10px; font-size: 13px; text-align: center;"></div>
     <button id="logoutBtn">Logout</button>
   </div>
 
@@ -150,6 +226,24 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module" src="admin.js"></script>
-</body>
+  
+  <script>
+    const menuBtn = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
 
+    if (window.innerWidth > 768) {
+      sidebar.classList.remove('closed');
+    }
+
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('closed');
+    });
+
+    document.getElementById('map').addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.add('closed');
+      }
+    });
+  </script>
+</body>
 </html>

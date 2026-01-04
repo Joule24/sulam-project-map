@@ -90,11 +90,20 @@ function polygonClickHandler(e) {
 
 // ---------------- INIT MAP ----------------
 function initMap() {
-  map = L.map('map', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 3 });
+  map = L.map('map', { 
+    crs: L.CRS.Simple, 
+    minZoom: -2,                // Allows zooming out further on small screens
+    maxZoom: 2,
+    zoomSnap: 0.1,              // Allows smoother, more precise zoom levels
+    maxBounds: bounds,             
+    maxBoundsViscosity: 1.0        
+  });
+
   L.imageOverlay(IMAGE_FILENAME, bounds).addTo(map);
+
+  // fitBounds automatically calculates the zoom level to fit the image to the screen
   map.fitBounds(bounds);
 
-  // Attach the shared click handler (setFormEnabled will toggle this on/off)
   map.on('click', polygonClickHandler);
 }
 
