@@ -80,8 +80,11 @@ function showRecommendations(originCoords, excludeId) {
       id: p.id,
       title: p.data.title,
       desc: p.data.desc,
-      img: p.data.img || 'placeholder.jpg',
-      coords: { lat: p.desktop.getLatLng().lat, lng: p.desktop.getLatLng().lng },
+      img: getThumbnail(p.data),
+      coords: {
+        lat: p.desktop.getLatLng().lat,
+        lng: p.desktop.getLatLng().lng
+      },
       type: 'poi'
     })),
     ...zonePolygons.map(z => {
@@ -90,8 +93,11 @@ function showRecommendations(originCoords, excludeId) {
         id: z.id,
         title: z.data.title,
         desc: z.data.desc,
-        img: z.data.img || 'placeholder.jpg',
-        coords: { lat: center.lat, lng: center.lng },
+        img: getThumbnail(z.data),
+        coords: {
+          lat: center.lat,
+          lng: center.lng
+        },
         type: 'zone'
       };
     })
@@ -127,15 +133,64 @@ function showRecommendations(originCoords, excludeId) {
 
     // 3. Each click uses fresh item object
     li.addEventListener('click', () => {
-      activeMapDesktop.setView([item.coords.lat, item.coords.lng], Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom()));
-      activeMapMobile.setView([item.coords.lat, item.coords.lng], Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom()));
-      showModal(item); // triggers new recommendations
+      const fullData = findFullDataById(item.id, item.type);
+      if (!fullData) return;
+
+      activeMapDesktop.setView(
+        [fullData.coords[0], fullData.coords[1]],
+        Math.max(activeMapDesktop.getZoom(), activeMapDesktop.getMinZoom())
+      );
+
+      activeMapMobile.setView(
+        [fullData.coords[0], fullData.coords[1]],
+        Math.max(activeMapMobile.getZoom(), activeMapMobile.getMinZoom())
+      );
+
+      showModal(fullData);
     });
 
     recommendationList.appendChild(li);
   });
 
   recommendationBox.classList.remove('hidden');
+}
+
+function findFullDataById(id, type) {
+  if (type === 'poi') {
+    const p = poiMarkers.find(p => p.id === id);
+    if (!p) return null;
+
+    const latlng = p.desktop.getLatLng();
+
+    return {
+      id: p.id,
+      title: p.data.title,
+      desc: p.data.desc,
+      images: p.data.images || null,
+      thumb: p.data.thumb || null,
+      ...p.data,
+      coords: [latlng.lat, latlng.lng]
+    };
+  }
+
+  if (type === 'zone') {
+    const z = zonePolygons.find(z => z.id === id);
+    if (!z) return null;
+
+    const center = z.desktop.getBounds().getCenter();
+
+    return {
+      id: z.id,
+      title: z.data.title,
+      desc: z.data.desc,
+      images: z.data.images || null,
+      thumb: z.data.thumb || null,
+      ...z.data,
+      coords: [center.lat, center.lng]
+    };
+  }
+
+  return null;
 }
 
 // ---------------- MODAL FUNCTIONS ----------------
@@ -148,7 +203,10 @@ export const showModal = function showModal(data) {
 
   // Update modal content
   modalTitle.textContent = data.title || '';
-  const images = normalizeImages(data);
+  const images = normalizeImages({
+    ...data,
+    images: data.images ?? data.data?.images
+  });
 
   // Default to NOW
   if (images.now) {
@@ -401,7 +459,7 @@ function populatePOIsSidebar(docs) {
     const li = document.createElement('li');
     li.dataset.id = doc.id;
     li.innerHTML = `
-      <img class="thumb" src="${d.thumb || d.img || ''}" alt="${d.title || 'POI'} thumbnail">
+      <img class="thumb" src="${getThumbnail(d)}" alt="${d.title || 'POI'} thumbnail">
       <div class="item-text">
         <div class="title">${d.title}</div>
         <div class="meta">POI</div>
@@ -432,7 +490,7 @@ function populatePOIsSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        images: d.images || null,
         coords: [latlngDesktop.lat, latlngDesktop.lng],
         realWorldCoords: d.realWorldCoords || null
       });
@@ -463,7 +521,7 @@ function populatePOIsSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        images: d.images || null,
         coords: [latlngDesktop.lat, latlngDesktop.lng],
         realWorldCoords: d.realWorldCoords || null
       });
@@ -480,7 +538,7 @@ function populateZonesSidebar(docs) {
     li.dataset.id = doc.id;
 
     li.innerHTML = `
-      <img class="thumb" src="${d.thumb || d.img || ''}" alt="${d.title || 'Zone'} thumbnail">
+      <img class="thumb" src="${getThumbnail(d)}" alt="${d.title || 'Zone'} thumbnail">
       <div class="item-text">
         <div class="title">${d.title}</div>
         <div class="meta">Zone</div>
@@ -507,7 +565,7 @@ function populateZonesSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        images: d.images || null,
         coords: [center.lat, center.lng],
         realWorldCoords: d.realWorldCoords || null
       });
@@ -538,7 +596,7 @@ function populateZonesSidebar(docs) {
         id: doc.id,
         title: d.title,
         desc: d.desc,
-        img: d.img,
+        images: d.images || null,
         coords: [center.lat, center.lng],
         realWorldCoords: d.realWorldCoords || null
       });
